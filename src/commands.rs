@@ -1,4 +1,5 @@
 pub(crate) mod echo;
+pub(crate) mod env;
 pub(crate) mod exit;
 
 lazy_static::lazy_static! {

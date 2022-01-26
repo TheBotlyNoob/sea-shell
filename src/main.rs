@@ -21,13 +21,13 @@ fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
 pub(crate) trait CommandHandler: Sync {
   fn name(&self) -> String;
 
-  fn handle(&self, arguments: Vec<String>) -> i32;
+  fn handle(&self, args: Vec<String>) -> i32;
 }
 
 fn handle_command(command: String) {
   let cmd = command
-    .split(' ')
-    .map(String::from)
+    .split_whitespace()
+    .map(|arg| arg.trim_end().to_owned())
     .collect::<Vec<String>>();
 
   for command in commands::COMMANDS.iter() {

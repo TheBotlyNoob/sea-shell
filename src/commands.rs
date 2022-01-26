@@ -2,7 +2,12 @@ pub(crate) mod echo;
 pub(crate) mod env;
 pub(crate) mod exit;
 
-lazy_static::lazy_static! {
-  pub(crate) static ref COMMANDS: [Box<dyn crate::CommandHandler>; 2] =
-    [Box::new(echo::EchoCommand), Box::new(exit::ExitCommand)];
-}
+use once_cell::sync::Lazy;
+
+pub(crate) static COMMANDS: Lazy<[Box<dyn crate::CommandHandler>; 3]> = Lazy::new(|| {
+  [
+    Box::new(echo::EchoCommand),
+    Box::new(exit::ExitCommand),
+    Box::new(env::EnvCommand),
+  ]
+});

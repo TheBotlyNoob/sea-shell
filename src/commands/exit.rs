@@ -11,6 +11,7 @@ impl crate::CommandHandler for ExitCommand {
     if !args.is_empty() {
       code = args[0].parse::<i32>().unwrap_or_else(|_| {
         eprintln!("Failed to parse exit code, exiting with code 0");
+
         0
       });
     }

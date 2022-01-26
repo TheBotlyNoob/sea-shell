@@ -5,9 +5,21 @@ impl crate::CommandHandler for EnvCommand {
     "env".into()
   }
 
-  fn handle(&self, _args: Vec<String>) -> i32 {
-    for (key, value) in crate::ENVIRON.iter() {
-      println!("{key}: {value}");
+  fn handle(&self, args: Vec<String>) -> i32 {
+    if args.is_empty() {
+      for (key, value) in &crate::STATE.environment {
+        println!("{key}: {value}");
+      }
+    } else {
+      let env_var = &args[0];
+      match crate::STATE
+        .environment
+        .iter()
+        .find(|(key, _value)| &env_var == key)
+      {
+        Some((_key, value)) => println!("{value}"),
+        None => tracing::error!("environment variable {env_var} not found"),
+      }
     }
 
     0

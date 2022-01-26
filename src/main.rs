@@ -1,14 +1,11 @@
 use std::{
-  collections::HashMap,
   error::Error,
   io::{stdin, stdout, Write as _},
 };
 
 pub(crate) mod commands;
 
-lazy_static::lazy_static! {
-  pub(crate) static ref ENVIRON: HashMap<String, String> = HashMap::new();
-}
+pub(crate) static ENVIRON: &[(String, String)] = &[];
 
 fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
   let prompt = "$ ";
@@ -40,7 +37,12 @@ fn handle_command(command: String) {
 
   for command in commands::COMMANDS.iter() {
     if command.name() == cmd[0] {
-      command.handle(cmd.iter().skip(1).cloned().collect());
+      ENVIRON.push(
+        "?".into(),
+        command
+          .handle(cmd.iter().skip(1).cloned().collect())
+          .to_string(),
+      );
     }
   }
 }

@@ -1,3 +1,6 @@
+mod exit;
+
 use once_cell::sync::Lazy;
 
-pub(crate) static COMMANDS: Lazy<&[Box<dyn crate::CommandHandler>]> = Lazy::new(|| &[]);
+pub static COMMANDS: Lazy<Vec<Box<dyn crate::CommandHandler>>> =
+  Lazy::new(|| vec![Box::new(exit::ExitCommand)]);

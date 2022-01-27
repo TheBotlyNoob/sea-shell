@@ -38,12 +38,12 @@ fn handle_command(command: String) {
     .find(|command| command.name() == cmd[0])
   {
     Some(command) => {
-      tracing::trace!("executing command {}", command.name());
+      tracing::trace!("{}: executing...", command.name());
 
       command.handle(cmd.iter().skip(1).cloned().collect())
     }
     None => {
-      tracing::error!("command {} not found", cmd[0]);
+      tracing::error!("{}: command not found", cmd[0]);
 
       1
     }
@@ -65,12 +65,14 @@ pub(crate) mod state {
     Mutex::new(hashmap)
   });
 
+  #[inline(always)]
   pub(crate) fn environment() -> MutexGuard<'static, HashMap<String, String>> {
     ENVIRONMENT.lock().unwrap()
   }
 
   static PROMPT: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new("❯ ".into()));
 
+  #[inline(always)]
   pub(crate) fn prompt() -> MutexGuard<'static, String> {
     PROMPT.lock().unwrap()
   }

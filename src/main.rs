@@ -1,5 +1,6 @@
 use std::{
   error::Error,
+  io::{stdin, stdout, Write},
 };
 
 pub(crate) mod commands;
@@ -9,9 +10,11 @@ fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
 
   loop {
     handle_command({
+      print!("{}", state::prompt());
+      stdout().flush()?;
       let mut command = String::new();
-      stdin().read_line(&mut command);
-      
+      stdin().read_line(&mut command)?;
+      command
     });
   }
 }
@@ -19,7 +22,7 @@ fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
 pub(crate) trait CommandHandler: Sync + Send + 'static {
   fn name(&self) -> String;
 
-  fn handle(&self, args: Vec<String>) -> i32;
+  fn handle(&self, args: Vec<&String>) -> i32;
 
   fn help(&self) -> String {
     "No Help For This Command".into()
@@ -29,7 +32,7 @@ pub(crate) trait CommandHandler: Sync + Send + 'static {
 fn handle_command(command: String) {
   let cmd = command
     .split_whitespace()
-    .map(|arg| arg.trim_end().to_owned())
+    .map(|arg| arg.trim_end().into())
     .collect::<Vec<String>>();
 
   let code = match commands::COMMANDS
@@ -39,7 +42,7 @@ fn handle_command(command: String) {
     Some(command) => {
       tracing::trace!("{}: executing...", command.name());
 
-      command.handle(cmd.iter().skip(1).cloned().collect())
+      command.handle(cmd.iter().skip(1).collect())
     }
     None => {
       tracing::error!("{}: command not found", cmd[0]);
@@ -71,7 +74,7 @@ pub(crate) mod state {
     ENVIRONMENT.lock().unwrap()
   }
 
-  static PROMPT: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new(console::style("❯ ").white().to_string()));
+  static PROMPT: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new("❯ ".into()));
 
   #[inline(always)]
   pub(crate) fn prompt() -> MutexGuard<'static, String> {

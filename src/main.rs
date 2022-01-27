@@ -1,21 +1,15 @@
-use once_cell::sync::Lazy;
 use std::{
-  collections::HashMap,
   error::Error,
   io::{stdin, stdout, Write as _},
-  sync::Mutex,
-  ops::{Deref, DerefMut}
 };
 
 pub(crate) mod commands;
-
-pub(crate) static mut STATE: Lazy<Mutex<State>> = Lazy::new(|| Mutex::new(State::new()));
 
 fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
   tracing_subscriber::fmt().pretty().without_time().init();
 
   loop {
-    print!("{}", STATE.lock().unwrap().prompt);
+    print!("{}", state::prompt());
     stdout().flush().unwrap();
     let mut input = String::new();
     stdin().read_line(&mut input).unwrap();
@@ -55,29 +49,29 @@ fn handle_command(command: String) {
     }
   };
 
-  STATE.lock().unwrap().set_exit_code(code);
+  state::environment().insert("?".into(), code.to_string());
 }
 
-pub(crate) struct State {
-  pub environment: HashMap<String, String>,
-  pub exit_code: i32,
-  pub prompt: String,
-}
+pub(crate) mod state {
+  use once_cell::sync::Lazy;
+  use std::{
+    collections::HashMap,
+    sync::{Mutex, MutexGuard},
+  };
 
-impl State {
-  fn new() -> Self {
-    Self {
-      environment: {
-        let mut environment = HashMap::new();
-        environment.insert("?".into(), "0".into());
-        environment
-      },
-      exit_code: 0,
-      prompt: "❯ ".into(),
-    }
+  static ENVIRONMENT: Lazy<Mutex<HashMap<String, String>>> = Lazy::new(|| {
+    let mut hashmap = HashMap::new();
+    hashmap.insert("?".into(), "0".into());
+    Mutex::new(hashmap)
+  });
+
+  pub(crate) fn environment() -> MutexGuard<'static, HashMap<String, String>> {
+    ENVIRONMENT.lock().unwrap()
   }
 
-  fn set_exit_code(&mut self, exit_code: i32) -> Option<i32> {
-    self.environment.insert("?".into(), exit_code.to_string()).map(|prev_exit_code| prev_exit_code.parse::<i32>().unwrap())
+  static PROMPT: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new("❯ ".into()));
+
+  pub(crate) fn prompt() -> MutexGuard<'static, String> {
+    PROMPT.lock().unwrap()
   }
 }

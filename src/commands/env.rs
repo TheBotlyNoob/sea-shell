@@ -7,13 +7,12 @@ impl crate::CommandHandler for EnvCommand {
 
   fn handle(&self, args: Vec<String>) -> i32 {
     if args.is_empty() {
-      for (key, value) in &crate::STATE.environment {
+      for (key, value) in &*crate::state::environment() {
         println!("{key}: {value}");
       }
     } else {
       let env_var = &args[0];
-      match crate::STATE
-        .environment
+      match crate::state::environment()
         .iter()
         .find(|(key, _value)| &env_var == key)
       {

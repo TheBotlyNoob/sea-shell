@@ -1,6 +1,5 @@
 use std::{
   error::Error,
-  io::{stdin, stdout, Write as _},
 };
 
 pub(crate) mod commands;
@@ -9,11 +8,11 @@ fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
   tracing_subscriber::fmt().pretty().without_time().init();
 
   loop {
-    print!("{}", state::prompt());
-    stdout().flush().unwrap();
-    let mut input = String::new();
-    stdin().read_line(&mut input).unwrap();
-    handle_command(input);
+    handle_command({
+      let mut command = String::new();
+      stdin().read_line(&mut command);
+      
+    });
   }
 }
 
@@ -49,6 +48,8 @@ fn handle_command(command: String) {
     }
   };
 
+  state::history().push(cmd);
+
   state::environment().insert("?".into(), code.to_string());
 }
 
@@ -70,10 +71,17 @@ pub(crate) mod state {
     ENVIRONMENT.lock().unwrap()
   }
 
-  static PROMPT: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new("❯ ".into()));
+  static PROMPT: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new(console::style("❯ ").white().to_string()));
 
   #[inline(always)]
   pub(crate) fn prompt() -> MutexGuard<'static, String> {
     PROMPT.lock().unwrap()
+  }
+
+  static HISTORY: Lazy<Mutex<Vec<Vec<String>>>> = Lazy::new(|| Mutex::new(Vec::new()));
+
+  #[inline(always)]
+  pub(crate) fn history() -> MutexGuard<'static, Vec<Vec<String>>> {
+    HISTORY.lock().unwrap()
   }
 }

@@ -1,0 +1,7 @@
+WHITESPACE = _{ " " }
+COMMENT = _{ "-#-" ~ "-#-" | "#" ~ NEWLINE }
+
+EOL = { ";" | NEWLINE }
+
+// Mainly used for syntax highlighting
+keyword = { "echo" | "man" | "alias" | "func" }

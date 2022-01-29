@@ -4,7 +4,7 @@ use std::{
 };
 
 fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
-  tracing_subscriber::fmt().pretty().without_time().init();
+  // tracing_subscriber::fmt().pretty().without_time().init();
 
   loop {
     pirs::handle_command({

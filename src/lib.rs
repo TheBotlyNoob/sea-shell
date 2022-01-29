@@ -1,4 +1,5 @@
 pub mod commands;
+pub mod syntax;
 
 pub fn handle_command(command: String) {
   let cmd = command
@@ -8,25 +9,25 @@ pub fn handle_command(command: String) {
 
   let command_name = &cmd[0];
 
-  let code = match commands::COMMANDS
+  let code = match state::commands()
     .iter()
     .find(|command| command.names().contains(command_name))
   {
     Some(command) => {
-      tracing::trace!("{}: executing...", command_name);
+      println!("{}: executing...", command_name);
 
       command.handle(cmd.iter().skip(1).collect())
     }
     None => {
-      tracing::error!("{}: command not found", cmd[0]);
+      println!("{}: command not found", cmd[0]);
 
       1
     }
   };
 
-  state::history().push(cmd);
+  state::history_mut().push(cmd);
 
-  state::environment().insert("?".into(), code.to_string());
+  state::environment_mut().insert("?".into(), code.to_string());
 }
 
 pub trait CommandHandler: Sync + Send + 'static {
@@ -43,31 +44,84 @@ pub mod state {
   use once_cell::sync::Lazy;
   use std::{
     collections::HashMap,
-    sync::{Mutex, MutexGuard},
+    sync::{RwLock, RwLockReadGuard, RwLockWriteGuard},
   };
 
-  static ENVIRONMENT: Lazy<Mutex<HashMap<String, String>>> = Lazy::new(|| {
+  static ENVIRONMENT: Lazy<RwLock<HashMap<String, String>>> = Lazy::new(|| {
     let mut hashmap = HashMap::new();
     hashmap.insert("?".into(), "0".into());
-    Mutex::new(hashmap)
+    RwLock::new(hashmap)
   });
 
   #[inline(always)]
-  pub fn environment() -> MutexGuard<'static, HashMap<String, String>> {
-    ENVIRONMENT.lock().unwrap()
+  pub fn environment() -> RwLockReadGuard<'static, HashMap<String, String>> {
+    ENVIRONMENT.read().unwrap()
   }
 
-  static PROMPT: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new("❯ ".into()));
-
   #[inline(always)]
-  pub fn prompt() -> MutexGuard<'static, String> {
-    PROMPT.lock().unwrap()
+  pub fn environment_mut() -> RwLockWriteGuard<'static, HashMap<String, String>> {
+    ENVIRONMENT.write().unwrap()
   }
 
-  static HISTORY: Lazy<Mutex<Vec<Vec<String>>>> = Lazy::new(|| Mutex::new(Vec::new()));
+  static PROMPT: Lazy<RwLock<String>> = Lazy::new(|| {
+    if if std::env::consts::OS == "windows" {
+      // Just a handful of things!
+      std::env::var("CI").is_ok()
+    || std::env::var("WT_SESSION").is_ok() // Windows Terminal
+    || std::env::var("ConEmuTask") == Ok("{cmd:Cmder}".into()) // ConEmu and cmder
+    || std::env::var("TERM_PROGRAM") == Ok("vscode".into())
+    || std::env::var("TERM") == Ok("xterm-256color".into())
+    || std::env::var("TERM") == Ok("alacritty".into())
+    } else if std::env::var("TERM") == Ok("linux".into()) {
+      // Linux kernel console. Maybe redundant with the below?...
+      false
+    } else {
+      // From https://github.com/iarna/has-unicode/blob/master/index.js
+      let ctype = std::env::var("LC_ALL")
+        .or_else(|_| std::env::var("LC_CTYPE"))
+        .or_else(|_| std::env::var("LANG"))
+        .unwrap_or_else(|_| "".into())
+        .to_uppercase();
+      ctype.ends_with("UTF8") || ctype.ends_with("UTF-8")
+    } {
+      RwLock::new("❯ ".into())
+    } else {
+      RwLock::new("> ".into())
+    }
+  });
 
   #[inline(always)]
-  pub fn history() -> MutexGuard<'static, Vec<Vec<String>>> {
-    HISTORY.lock().unwrap()
+  pub fn prompt() -> RwLockReadGuard<'static, String> {
+    PROMPT.read().unwrap()
+  }
+
+  #[inline(always)]
+  pub fn prompt_mut() -> RwLockWriteGuard<'static, String> {
+    PROMPT.write().unwrap()
+  }
+
+  static HISTORY: Lazy<RwLock<Vec<Vec<String>>>> = Lazy::new(|| RwLock::new(Vec::new()));
+
+  #[inline(always)]
+  pub fn history() -> RwLockReadGuard<'static, Vec<Vec<String>>> {
+    HISTORY.read().unwrap()
+  }
+
+  #[inline(always)]
+  pub fn history_mut() -> RwLockWriteGuard<'static, Vec<Vec<String>>> {
+    HISTORY.write().unwrap()
+  }
+
+  static COMMANDS: Lazy<RwLock<Vec<Box<dyn crate::CommandHandler>>>> =
+    Lazy::new(|| RwLock::new(vec![Box::new(crate::commands::ExitCommand)]));
+
+  #[inline(always)]
+  pub fn commands() -> RwLockReadGuard<'static, Vec<Box<dyn crate::CommandHandler>>> {
+    COMMANDS.read().unwrap()
+  }
+
+  #[inline(always)]
+  pub fn commands_mut() -> RwLockWriteGuard<'static, Vec<Box<dyn crate::CommandHandler>>> {
+    COMMANDS.write().unwrap()
   }
 }

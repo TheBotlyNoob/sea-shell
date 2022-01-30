@@ -1,5 +1,5 @@
 pub mod commands;
-pub mod syntax;
+pub mod parser;
 
 pub fn handle_command(command: String) {
   let cmd = command
@@ -123,5 +123,40 @@ pub mod state {
   #[inline(always)]
   pub fn commands_mut() -> RwLockWriteGuard<'static, Vec<Box<dyn crate::CommandHandler>>> {
     COMMANDS.write().unwrap()
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use crate::parser::*;
+
+  #[test]
+  fn parse_number() {
+    assert_eq!("123".parse::<Number>().unwrap(), Number(123));
+  }
+
+  #[test]
+  fn parse_add_op() {
+    assert_eq!(MathOperator::from("+"), Some(MathOperator::Add));
+  }
+
+  #[test]
+  fn parse_sub_op() {
+    assert_eq!(MathOperator::from("-"), Some(MathOperator::Sub));
+  }
+
+  #[test]
+  fn parse_mul_op() {
+    assert_eq!(MathOperator::from("*"), Some(MathOperator::Mul));
+  }
+
+  #[test]
+  fn parse_div_op() {
+    assert_eq!(MathOperator::from("/"), Some(MathOperator::Div));
+  }
+
+  #[test]
+  fn invalid_op() {
+    assert_eq!(MathOperator::from(""), None)
   }
 }

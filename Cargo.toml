@@ -8,8 +8,6 @@ edition = "2021"
 [dependencies]
 once_cell = "1.9"
 libc = { version = "0.2", features = ["const-extern-fn", "extra_traits"] }
-pest = "2.1"
-pest_derive = "2.1"
 
 [profile.release]
 lto = true

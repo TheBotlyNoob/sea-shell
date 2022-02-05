@@ -8,11 +8,13 @@ edition = "2021"
 [dependencies]
 once_cell = "1.9"
 libc = { version = "0.2", features = ["const-extern-fn", "extra_traits"] }
+logos = "0.12"
 
 owo-colors = { version = "3.2", optional = true }
 
 [profile.release]
 lto = true
+
 
 [[bin]]
 name = "pirs"

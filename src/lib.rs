@@ -1,6 +1,7 @@
 use std::format as f;
 
 pub mod commands;
+pub(crate) mod lexer;
 pub mod state;
 
 pub fn handle_command(
@@ -15,6 +16,8 @@ pub fn handle_command(
 
   #[cfg(not(feature = "use-default-logger"))]
   state::LOGGER.set(Box::new(logger)).ok();
+
+  println!("{:#?}", lexer::get_token_stream(&command));
 
   let cmd = command
     .split_whitespace()

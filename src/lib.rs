@@ -1,7 +1,21 @@
-pub mod commands;
-pub mod parser;
+use std::format as f;
 
-pub fn handle_command(command: String) {
+pub mod commands;
+pub mod state;
+
+pub fn handle_command(
+  command: String,
+  #[cfg(not(feature = "use-default-logger"))] logger: impl Logger,
+  #[cfg(feature = "use-default-logger")] log_level: LogLevel,
+) {
+  #[cfg(feature = "use-default-logger")]
+  state::LOGGER
+    .set(Box::new(default_logger::DefaultLogger(log_level)))
+    .ok();
+
+  #[cfg(not(feature = "use-default-logger"))]
+  state::LOGGER.set(Box::new(logger)).ok();
+
   let cmd = command
     .split_whitespace()
     .map(|arg| arg.trim_end().into())
@@ -11,15 +25,15 @@ pub fn handle_command(command: String) {
 
   let code = match state::commands()
     .iter()
-    .find(|command| command.names().contains(command_name))
+    .find(|command| command.names().contains(&&**command_name))
   {
     Some(command) => {
-      println!("{}: executing...", command_name);
+      state::logger().debug(&f!("executing: {}...", command_name));
 
-      command.handle(cmd.iter().skip(1).collect())
+      command.handle(cmd.iter().skip(1).map(|arg| &**arg).collect())
     }
     None => {
-      println!("{}: command not found", cmd[0]);
+      state::logger().error(&f!("command not found: {}", cmd[0]));
 
       1
     }
@@ -31,132 +45,91 @@ pub fn handle_command(command: String) {
 }
 
 pub trait CommandHandler: Sync + Send + 'static {
-  fn names(&self) -> Vec<String>;
+  fn names(&self) -> Vec<&str>;
 
-  fn handle(&self, args: Vec<&String>) -> i32;
+  fn handle(&self, args: Vec<&str>) -> i32;
 
-  fn help(&self) -> String {
-    "No Help For This Command".into()
+  fn help(&self) -> &'static str {
+    "No Help For This Command"
   }
 }
 
-pub mod state {
-  use once_cell::sync::Lazy;
-  use std::{
-    collections::HashMap,
-    sync::{RwLock, RwLockReadGuard, RwLockWriteGuard},
-  };
+pub trait Logger: Sync + Send + 'static {
+  fn debug(&self, message: &dyn AsRef<str>);
 
-  static ENVIRONMENT: Lazy<RwLock<HashMap<String, String>>> = Lazy::new(|| {
-    let mut hashmap = HashMap::new();
-    hashmap.insert("?".into(), "0".into());
-    RwLock::new(hashmap)
-  });
+  fn info(&self, message: &dyn AsRef<str>);
 
-  #[inline(always)]
-  pub fn environment() -> RwLockReadGuard<'static, HashMap<String, String>> {
-    ENVIRONMENT.read().unwrap()
+  fn warn(&self, message: &dyn AsRef<str>);
+
+  fn error(&self, message: &dyn AsRef<str>);
+
+  fn raw(&self, message: &dyn AsRef<str>);
+}
+
+#[cfg(feature = "use-default-logger")]
+pub use default_logger::LogLevel;
+
+#[cfg(feature = "use-default-logger")]
+mod default_logger {
+  use owo_colors::OwoColorize;
+
+  #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+  pub enum LogLevel {
+    Debug,
+    Info,
+    Warn,
+    Error,
   }
 
-  #[inline(always)]
-  pub fn environment_mut() -> RwLockWriteGuard<'static, HashMap<String, String>> {
-    ENVIRONMENT.write().unwrap()
-  }
+  pub struct DefaultLogger(pub LogLevel);
 
-  static PROMPT: Lazy<RwLock<String>> = Lazy::new(|| {
-    if if std::env::consts::OS == "windows" {
-      // Just a handful of things!
-      std::env::var("CI").is_ok()
-    || std::env::var("WT_SESSION").is_ok() // Windows Terminal
-    || std::env::var("ConEmuTask") == Ok("{cmd:Cmder}".into()) // ConEmu and cmder
-    || std::env::var("TERM_PROGRAM") == Ok("vscode".into())
-    || std::env::var("TERM") == Ok("xterm-256color".into())
-    || std::env::var("TERM") == Ok("alacritty".into())
-    } else if std::env::var("TERM") == Ok("linux".into()) {
-      // Linux kernel console. Maybe redundant with the below?...
-      false
-    } else {
-      // From https://github.com/iarna/has-unicode/blob/master/index.js
-      let ctype = std::env::var("LC_ALL")
-        .or_else(|_| std::env::var("LC_CTYPE"))
-        .or_else(|_| std::env::var("LANG"))
-        .unwrap_or_else(|_| "".into())
-        .to_uppercase();
-      ctype.ends_with("UTF8") || ctype.ends_with("UTF-8")
-    } {
-      RwLock::new("❯ ".into())
-    } else {
-      RwLock::new("> ".into())
+  impl DefaultLogger {
+    pub fn log_level(&self) -> u8 {
+      if let Ok(level) = std::env::var("LOG_LEVEL") {
+        match &*level.to_lowercase() {
+          "debug" => 4,
+          "info" => 3,
+          "warn" => 2,
+          _ => 1,
+        }
+      } else {
+        match self.0 {
+          LogLevel::Debug => 4,
+          LogLevel::Info => 3,
+          LogLevel::Warn => 2,
+          LogLevel::Error => 1,
+        }
+      }
     }
-  });
-
-  #[inline(always)]
-  pub fn prompt() -> RwLockReadGuard<'static, String> {
-    PROMPT.read().unwrap()
   }
 
-  #[inline(always)]
-  pub fn prompt_mut() -> RwLockWriteGuard<'static, String> {
-    PROMPT.write().unwrap()
-  }
+  impl super::Logger for DefaultLogger {
+    fn debug(&self, message: &dyn AsRef<str>) {
+      if self.log_level() >= 4 {
+        println!("[{}]: {}", "debug".blue(), message.as_ref());
+      }
+    }
 
-  static HISTORY: Lazy<RwLock<Vec<Vec<String>>>> = Lazy::new(|| RwLock::new(Vec::new()));
+    fn info(&self, message: &dyn AsRef<str>) {
+      if self.log_level() >= 3 {
+        println!("[{}]: {}", "info".green(), message.as_ref());
+      }
+    }
 
-  #[inline(always)]
-  pub fn history() -> RwLockReadGuard<'static, Vec<Vec<String>>> {
-    HISTORY.read().unwrap()
-  }
+    fn warn(&self, message: &dyn AsRef<str>) {
+      if self.log_level() >= 2 {
+        println!("[{}]: {}", "warn".yellow(), message.as_ref());
+      }
+    }
 
-  #[inline(always)]
-  pub fn history_mut() -> RwLockWriteGuard<'static, Vec<Vec<String>>> {
-    HISTORY.write().unwrap()
-  }
+    fn error(&self, message: &dyn AsRef<str>) {
+      if self.log_level() >= 1 {
+        println!("[{}]: {}", "error".bright_red(), message.as_ref());
+      }
+    }
 
-  static COMMANDS: Lazy<RwLock<Vec<Box<dyn crate::CommandHandler>>>> =
-    Lazy::new(|| RwLock::new(vec![Box::new(crate::commands::ExitCommand)]));
-
-  #[inline(always)]
-  pub fn commands() -> RwLockReadGuard<'static, Vec<Box<dyn crate::CommandHandler>>> {
-    COMMANDS.read().unwrap()
-  }
-
-  #[inline(always)]
-  pub fn commands_mut() -> RwLockWriteGuard<'static, Vec<Box<dyn crate::CommandHandler>>> {
-    COMMANDS.write().unwrap()
-  }
-}
-
-#[cfg(test)]
-mod tests {
-  use crate::parser::*;
-
-  #[test]
-  fn parse_number() {
-    assert_eq!("123".parse::<Number>().unwrap(), Number(123));
-  }
-
-  #[test]
-  fn parse_add_op() {
-    assert_eq!(MathOperator::from("+"), Some(MathOperator::Add));
-  }
-
-  #[test]
-  fn parse_sub_op() {
-    assert_eq!(MathOperator::from("-"), Some(MathOperator::Sub));
-  }
-
-  #[test]
-  fn parse_mul_op() {
-    assert_eq!(MathOperator::from("*"), Some(MathOperator::Mul));
-  }
-
-  #[test]
-  fn parse_div_op() {
-    assert_eq!(MathOperator::from("/"), Some(MathOperator::Div));
-  }
-
-  #[test]
-  fn invalid_op() {
-    assert_eq!(MathOperator::from(""), None)
+    fn raw(&self, message: &dyn AsRef<str>) {
+      println!("{}", message.as_ref());
+    }
   }
 }

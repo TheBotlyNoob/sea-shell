@@ -1,12 +1,11 @@
-/// hello
 pub struct ExitCommand;
 
 impl crate::CommandHandler for ExitCommand {
-  fn names(&self) -> Vec<String> {
-    vec!["exit".into()]
+  fn names(&self) -> Vec<&'static str> {
+    vec!["exit"]
   }
 
-  fn handle(&self, args: Vec<&String>) -> i32 {
+  fn handle(&self, args: Vec<&str>) -> i32 {
     let mut code = 0;
 
     if !args.is_empty() {

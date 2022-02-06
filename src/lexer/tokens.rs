@@ -39,7 +39,7 @@ pub enum LexToken {
   If,
 
   // Match string literals and then strip the " at start and end
-  #[regex("\"[^\"]*", |lex| lex.slice()[1..lex.slice().len() -1].to_owned())]
+  #[regex("\"([^\"\\\\]|\\\\.)*\"", |lex| lex.slice()[1..lex.slice().len() - 1].to_owned())]
   String(String),
 
   // Non-literal strings (currently variable names)
@@ -105,12 +105,12 @@ pub enum IdentKind {
   Let,
   If,
   Greater,
-  Smaller,
+  Less,
   FuncName,
   Plus,
   Minus,
-  Mult,
-  Div,
+  Multiply,
+  Divide,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -124,13 +124,13 @@ impl Ident {
     matches!(
       self.kind,
       IdentKind::Let
-        | IdentKind::Div
+        | IdentKind::Divide
         | IdentKind::Plus
         | IdentKind::FuncName
         | IdentKind::If
         | IdentKind::Greater
-        | IdentKind::Smaller
-        | IdentKind::Mult
+        | IdentKind::Less
+        | IdentKind::Multiply
         | IdentKind::Minus
     )
   }

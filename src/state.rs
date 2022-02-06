@@ -78,19 +78,19 @@ pub fn history_mut() -> RwLockWriteGuard<'static, Vec<Vec<String>>> {
 
 pub static NUMBER_OF_COMMANDS: usize = 2;
 
-static COMMANDS: Lazy<RwLock<[Box<dyn crate::CommandHandler>; 2]>> = Lazy::new(|| {
-  RwLock::new([
+static COMMANDS: Lazy<RwLock<Vec<Box<dyn crate::CommandHandler>>>> = Lazy::new(|| {
+  RwLock::new(vec![
     Box::new(crate::commands::ExitCommand),
     Box::new(crate::commands::EchoCommand),
   ])
 });
 
 #[inline(always)]
-pub fn commands() -> RwLockReadGuard<'static, [Box<dyn crate::CommandHandler>; 2]> {
+pub fn commands() -> RwLockReadGuard<'static, Vec<Box<dyn crate::CommandHandler>>> {
   COMMANDS.read().unwrap()
 }
 
 #[inline(always)]
-pub fn commands_mut() -> RwLockWriteGuard<'static, [Box<dyn crate::CommandHandler>; 2]> {
+pub fn commands_mut() -> RwLockWriteGuard<'static, Vec<Box<dyn crate::CommandHandler>>> {
   COMMANDS.write().unwrap()
 }

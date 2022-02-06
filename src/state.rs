@@ -1,96 +1,54 @@
-use once_cell::sync::{Lazy, OnceCell};
-use std::{
-  collections::HashMap,
-  sync::{RwLock, RwLockReadGuard, RwLockWriteGuard},
-};
+use std::collections::HashMap;
 
-pub(super) static LOGGER: OnceCell<Box<dyn super::Logger>> = OnceCell::new();
-
-#[inline(always)]
-pub fn logger() -> &'static dyn super::Logger {
-  LOGGER.get().unwrap().as_ref()
+#[derive(Debug)]
+pub struct State {
+  pub environment: HashMap<String, String>,
+  pub prompt: String,
+  pub supports_unicode: bool,
+  pub history: Vec<String>,
+  pub commands: Vec<Box<dyn crate::CommandHandler>>,
+  pub last_exit_code: i32,
 }
 
-static ENVIRONMENT: Lazy<RwLock<HashMap<String, String>>> = Lazy::new(|| {
-  let mut hashmap = HashMap::new();
-  hashmap.insert("?".into(), "0".into());
-  RwLock::new(hashmap)
-});
-
-#[inline(always)]
-pub fn environment() -> RwLockReadGuard<'static, HashMap<String, String>> {
-  ENVIRONMENT.read().unwrap()
-}
-
-#[inline(always)]
-pub fn environment_mut() -> RwLockWriteGuard<'static, HashMap<String, String>> {
-  ENVIRONMENT.write().unwrap()
-}
-
-static PROMPT: Lazy<RwLock<String>> = Lazy::new(|| {
-  if if std::env::consts::OS == "windows" {
-    // Just a handful of things!
-    std::env::var("CI").is_ok()
+impl State {
+  pub fn new(commands: Vec<Box<dyn crate::CommandHandler>>) -> Self {
+    let supports_unicode = if std::env::consts::OS == "windows" {
+      // Just a handful of things!
+      std::env::var("CI").is_ok()
   || std::env::var("WT_SESSION").is_ok() // Windows Terminal
   || std::env::var("ConEmuTask") == Ok("{cmd:Cmder}".into()) // ConEmu and cmder
   || std::env::var("TERM_PROGRAM") == Ok("vscode".into())
   || std::env::var("TERM") == Ok("xterm-256color".into())
   || std::env::var("TERM") == Ok("alacritty".into())
-  } else if std::env::var("TERM") == Ok("linux".into()) {
-    // Linux kernel console. Maybe redundant with the below?...
-    false
-  } else {
-    // From https://github.com/iarna/has-unicode/blob/master/index.js
-    let ctype = std::env::var("LC_ALL")
-      .or_else(|_| std::env::var("LC_CTYPE"))
-      .or_else(|_| std::env::var("LANG"))
-      .unwrap_or_else(|_| "".into())
-      .to_uppercase();
-    ctype.ends_with("UTF8") || ctype.ends_with("UTF-8")
-  } {
-    RwLock::new("❯ ".into())
-  } else {
-    RwLock::new("> ".into())
+    } else if std::env::var("TERM") == Ok("linux".into()) {
+      // Linux kernel console. Maybe redundant with the below?...
+      false
+    } else {
+      // From https://github.com/iarna/has-unicode/blob/master/index.js
+      let ctype = std::env::var("LC_ALL")
+        .or_else(|_| std::env::var("LC_CTYPE"))
+        .or_else(|_| std::env::var("LANG"))
+        .unwrap_or_else(|_| "".into())
+        .to_uppercase();
+      ctype.ends_with("UTF8") || ctype.ends_with("UTF-8")
+    };
+
+    Self {
+      environment: {
+        let mut environment = HashMap::new();
+        environment.insert("last-exit-code".into(), "0".into());
+        environment
+      },
+      supports_unicode,
+      prompt: if supports_unicode { "❯ " } else { "> " }.into(),
+      commands,
+      history: Vec::new(),
+      last_exit_code: 0,
+    }
   }
-});
 
-#[inline(always)]
-pub fn prompt() -> RwLockReadGuard<'static, String> {
-  PROMPT.read().unwrap()
-}
-
-#[inline(always)]
-pub fn prompt_mut() -> RwLockWriteGuard<'static, String> {
-  PROMPT.write().unwrap()
-}
-
-static HISTORY: Lazy<RwLock<Vec<Vec<String>>>> = Lazy::new(|| RwLock::new(Vec::new()));
-
-#[inline(always)]
-pub fn history() -> RwLockReadGuard<'static, Vec<Vec<String>>> {
-  HISTORY.read().unwrap()
-}
-
-#[inline(always)]
-pub fn history_mut() -> RwLockWriteGuard<'static, Vec<Vec<String>>> {
-  HISTORY.write().unwrap()
-}
-
-pub static NUMBER_OF_COMMANDS: usize = 2;
-
-static COMMANDS: Lazy<RwLock<Vec<Box<dyn crate::CommandHandler>>>> = Lazy::new(|| {
-  RwLock::new(vec![
-    Box::new(crate::commands::ExitCommand),
-    Box::new(crate::commands::EchoCommand),
-  ])
-});
-
-#[inline(always)]
-pub fn commands() -> RwLockReadGuard<'static, Vec<Box<dyn crate::CommandHandler>>> {
-  COMMANDS.read().unwrap()
-}
-
-#[inline(always)]
-pub fn commands_mut() -> RwLockWriteGuard<'static, Vec<Box<dyn crate::CommandHandler>>> {
-  COMMANDS.write().unwrap()
+  pub fn set_last_exit_code(&mut self, code: i32) {
+    self.last_exit_code = code;
+    self.environment.insert("last-exit-code".into(), "0".into());
+  }
 }

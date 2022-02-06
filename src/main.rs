@@ -1,22 +1,24 @@
-use std::{
-  error::Error,
-  io::{stdin, stdout, Write},
-};
+fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+  let mut rl = rustyline::Editor::<()>::new();
+  
+  let rl_history_file = format!(
+    "{}/.pirs_history",
+    dirs::home_dir().unwrap().display()
+  );
 
-fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
-  // tracing_subscriber::fmt().pretty().without_time().init();
+  rl.load_history(&rl_history_file)
+  .ok();
+
+  let mut pirs = pirs::Pirs::new(|code| std::process::exit(code), pirs::LogLevel::Info);
 
   loop {
-    pirs::handle_command(
-      {
-        print!("{}", pirs::state::prompt());
-
-        stdout().flush()?;
-        let mut command = String::new();
-        stdin().read_line(&mut command)?;
-        command
-      },
-      pirs::LogLevel::Info,
-    );
+    match rl.readline(&pirs.state.prompt) {
+      Ok(input) => {
+        rl.add_history_entry(&input);
+        pirs.handle_command(input);
+      }
+      _ => ()
   }
-}
+  
+  rl.save_history(&rl_history_file).ok();
+}}

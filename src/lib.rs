@@ -1,67 +1,74 @@
 use std::format as f;
 
 pub mod commands;
-pub mod state;
+mod state;
+pub use state::State;
 
-pub(crate) mod lexer;
-pub(crate) mod parser;
-
-pub fn handle_command(
-  command: String,
-  #[cfg(not(feature = "use-default-logger"))] logger: impl Logger,
-  #[cfg(feature = "use-default-logger")] log_level: LogLevel,
-) {
-  #[cfg(feature = "use-default-logger")]
-  state::LOGGER
-    .set(Box::new(default_logger::DefaultLogger(log_level)))
-    .ok();
-
-  #[cfg(not(feature = "use-default-logger"))]
-  state::LOGGER.set(Box::new(logger)).ok();
-
-  let expr = parser::generate_expression_tree(lexer::get_token_stream(&command));
-
-  println!("{:#?}", expr);
-
-  let cmd = command
-    .split_whitespace()
-    .map(|arg| arg.trim_end().into())
-    .collect::<Vec<String>>();
-
-  let command_name = &cmd[0];
-
-  let code = match state::commands()
-    .iter()
-    .find(|command| command.names().contains(&&**command_name))
-  {
-    Some(command) => {
-      state::logger().debug(&f!("executing: {}...", command_name));
-
-      command.handle(cmd.iter().skip(1).map(|arg| &**arg).collect())
-    }
-    None => {
-      state::logger().error(&f!("command not found: {}", cmd[0]));
-
-      1
-    }
-  };
-
-  state::history_mut().push(cmd);
-
-  state::environment_mut().insert("?".into(), code.to_string());
+#[derive(Debug)]
+pub struct Pirs {
+  pub state: State,
+  exit_handler: fn(i32),
+  pub logger: Box<dyn Logger>,
 }
 
-pub trait CommandHandler: Sync + Send + 'static {
-  fn names(&self) -> Vec<&str>;
+impl Pirs {
+  pub fn new(
+    exit_handler: fn(i32),
+    #[cfg(not(feature = "use-default-logger"))] logger: impl Logger,
+    #[cfg(feature = "use-default-logger")] log_level: LogLevel,
+  ) -> Self {
+    Self {
+      exit_handler,
+      state: State::new(commands::BUILT_IN_COMMANDS()),
+      #[cfg(not(feature = "use-default-logger"))]
+      logger: Box::new(logger),
+      #[cfg(feature = "use-default-logger")]
+      logger: Box::new(default_logger::DefaultLogger(log_level)),
+    }
+  }
 
-  fn handle(&self, args: Vec<&str>) -> i32;
+  pub fn handle_command(&mut self, command: impl AsRef<str>) {
+    let cmd = command
+      .as_ref()
+      .split_whitespace()
+      .map(|arg| arg.trim_end().into())
+      .collect::<Vec<String>>();
 
-  fn help(&self) -> &'static str {
+    let command_name = &cmd[0];
+
+    let code = match self
+      .state
+      .commands
+      .iter()
+      .find(|command| command.names(self).contains(&&**command_name))
+    {
+      Some(command) => {
+        self.logger.debug(&f!("executing: {}...", command_name));
+
+        command.handle(cmd.iter().skip(1).map(|arg| &**arg).collect(), self)
+      }
+      None => {
+        self.logger.error(&f!("command not found: {}", cmd[0]));
+
+        1
+      }
+    };
+
+    self.state.set_last_exit_code(code);
+  }
+}
+
+pub trait CommandHandler: Sync + Send + std::fmt::Debug + 'static {
+  fn names(&self, ctx: &Pirs) -> Vec<&str>;
+
+  fn handle(&self, args: Vec<&str>, ctx: &Pirs) -> i32;
+
+  fn help(&self, _ctx: &Pirs) -> &str {
     "No Help For This Command"
   }
 }
 
-pub trait Logger: Sync + Send + 'static {
+pub trait Logger: Sync + std::fmt::Debug + Send + 'static {
   fn debug(&self, message: &dyn AsRef<str>);
 
   fn info(&self, message: &dyn AsRef<str>);
@@ -88,6 +95,7 @@ mod default_logger {
     Error,
   }
 
+  #[derive(Debug)]
   pub struct DefaultLogger(pub LogLevel);
 
   impl DefaultLogger {

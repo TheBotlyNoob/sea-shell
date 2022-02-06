@@ -1,5 +1,5 @@
-pub mod tokens;
+pub fn tokenize_command(input: impl AsRef<str>) {
+  let commands = input.as_ref().split(';');
 
-#[allow(clippy::module_inception)]
-mod lexer;
-pub use lexer::*;
+  // commands
+}

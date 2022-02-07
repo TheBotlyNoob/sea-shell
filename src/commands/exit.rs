@@ -14,7 +14,7 @@ impl crate::CommandHandler for ExitCommand {
     }
 
     (ctx.exit_handler)(code);
-    
+
     code
   }
 }

@@ -28,6 +28,10 @@ impl Pirs {
   }
 
   pub fn handle_command(&mut self, command: impl AsRef<str>) {
+    if command.as_ref().is_empty() {
+      return;
+    }
+
     let cmd = command
       .as_ref()
       .split_whitespace()

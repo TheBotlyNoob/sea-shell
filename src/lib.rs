@@ -67,8 +67,8 @@ pub trait CommandHandler: Sync + Send + std::fmt::Debug + 'static {
 
   fn handle(&self, args: Vec<&str>, ctx: &Pirs) -> i32;
 
-  fn help(&self, _ctx: &Pirs) -> &str {
-    "No Help For This Command"
+  fn description(&self, _ctx: &Pirs) -> &str {
+    "No Description For This Command"
   }
 }
 

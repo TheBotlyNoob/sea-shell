@@ -2,8 +2,8 @@
 pub struct ExitCommand;
 
 impl crate::CommandHandler for ExitCommand {
-  fn names(&self, _ctx: &crate::Pirs) -> Vec<&str> {
-    vec!["exit"]
+  fn name(&self, _ctx: &crate::Pirs) -> &str {
+    "exit"
   }
 
   fn handle(&self, args: Vec<&str>, ctx: &crate::Pirs) -> i32 {

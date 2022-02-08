@@ -10,6 +10,11 @@ libc = { version = "0.2", features = ["const-extern-fn", "extra_traits"] }
 logos = "0.12"
 dirs = "4.0"
 
+# not optional because clap is also used in the library
+# to parse arguments to commands
+clap = { version = "3.0", features = ["cargo"] }
+concolor-clap = "0.0"
+
 owo-colors = { version = "3.2", optional = true }
 rustyline = { version = "9.1", optional = true }
 
@@ -22,5 +27,7 @@ name = "pirs"
 required-features = ["cli"]
 
 [features]
+default = ["cli"]
+
 use-default-logger = []
 cli = ["owo-colors", "rustyline", "use-default-logger"]

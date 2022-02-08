@@ -1,4 +1,6 @@
 fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+  let clap_app = clap::app_from_crate!().get_matches();
+  
   let mut rl = rustyline::Editor::<()>::new();
 
   let rl_history_file = format!("{}/.pirs_history", dirs::home_dir().unwrap().display());

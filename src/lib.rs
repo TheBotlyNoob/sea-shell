@@ -1,8 +1,11 @@
 use std::format as f;
 
-pub mod commands;
 mod state;
 pub use state::State;
+
+pub mod commands;
+
+pub mod lexer;
 
 #[derive(Debug)]
 pub struct Pirs {
@@ -17,25 +20,32 @@ impl Pirs {
     #[cfg(not(feature = "use-default-logger"))] logger: impl Logger,
     #[cfg(feature = "use-default-logger")] log_level: LogLevel,
   ) -> Self {
+    #[cfg(not(feature = "use-default-logger"))]
+    let logger = Box::new(logger);
+    #[cfg(feature = "use-default-logger")]
+    let logger = Box::new(default_logger::DefaultLogger(log_level));
+
+    logger.info(&"Welcome to Pirs, A POSIX-like shell written in Rust");
+    logger.info(&"Type 'help' for a list of commands");
+    logger.raw(&"\n");
+
     Self {
       exit_handler,
       state: State::new(commands::BUILT_IN_COMMANDS()),
-      #[cfg(not(feature = "use-default-logger"))]
-      logger: Box::new(logger),
-      #[cfg(feature = "use-default-logger")]
-      logger: Box::new(default_logger::DefaultLogger(log_level)),
+      logger,
     }
   }
 
   pub fn handle_command(&mut self, command: impl AsRef<str>) {
-    if command.as_ref().is_empty() {
+    let command = command.as_ref().trim();
+
+    if command.is_empty() {
       return;
     }
 
     let cmd = command
-      .as_ref()
       .split_whitespace()
-      .map(|arg| arg.trim_end().into())
+      .map(|arg| arg.trim().into())
       .collect::<Vec<String>>();
 
     let command_name = &cmd[0];
@@ -44,7 +54,7 @@ impl Pirs {
       .state
       .commands
       .iter()
-      .find(|command| command.names(self).contains(&&**command_name))
+      .find(|command| command.name(self) == &**command_name)
     {
       Some(command) => {
         self.logger.debug(&f!("executing: {}...", command_name));
@@ -63,12 +73,12 @@ impl Pirs {
 }
 
 pub trait CommandHandler: Sync + Send + std::fmt::Debug + 'static {
-  fn names(&self, ctx: &Pirs) -> Vec<&str>;
+  fn name(&self, ctx: &Pirs) -> &str;
 
   fn handle(&self, args: Vec<&str>, ctx: &Pirs) -> i32;
-
-  fn description(&self, _ctx: &Pirs) -> &str {
-    "No Description For This Command"
+  
+  fn clap(&self, ctx: &Pirs) -> clap::App {
+    clap::App::new(self.name(ctx))
   }
 }
 

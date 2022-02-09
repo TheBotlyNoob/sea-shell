@@ -1,5 +1,6 @@
 [package]
 name = "pirs"
+description = "A POSIX-like shell written in Rust"
 version = "0.1.0"
 edition = "2021"
 
@@ -12,8 +13,7 @@ dirs = "4.0"
 
 # not optional because clap is also used in the library
 # to parse arguments to commands
-clap = { version = "3.0", features = ["cargo"] }
-concolor-clap = "0.0"
+argh = "0.1"
 
 owo-colors = { version = "3.2", optional = true }
 rustyline = { version = "9.1", optional = true }

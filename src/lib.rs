@@ -76,10 +76,8 @@ pub trait CommandHandler: Sync + Send + std::fmt::Debug + 'static {
   fn name(&self, ctx: &Pirs) -> &str;
 
   fn handle(&self, args: Vec<&str>, ctx: &Pirs) -> i32;
-  
-  fn clap(&self, ctx: &Pirs) -> clap::App {
-    clap::App::new(self.name(ctx))
-  }
+
+  fn args(&self, ctx: &Pirs) -> dyn argh::FromArgs;
 }
 
 pub trait Logger: Sync + std::fmt::Debug + Send + 'static {

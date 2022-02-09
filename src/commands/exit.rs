@@ -1,12 +1,6 @@
-#[derive(Debug)]
-pub struct ExitCommand;
-
-impl crate::CommandHandler for ExitCommand {
-  fn name(&self, _ctx: &crate::Pirs) -> &str {
-    "exit"
-  }
-
-  fn handle(&self, args: Vec<&str>, ctx: &crate::Pirs) -> i32 {
+pub const EXIT_COMMAND: crate::Command = crate::Command {
+  name: "exit",
+  handler: |args, ctx| {
     let mut code = 0;
 
     if !args.is_empty() {
@@ -16,5 +10,5 @@ impl crate::CommandHandler for ExitCommand {
     (ctx.exit_handler)(code);
 
     code
-  }
-}
+  },
+};

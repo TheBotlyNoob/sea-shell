@@ -1,14 +1,12 @@
-#[derive(Debug)]
-pub struct EchoCommand;
+///
+#[derive(argh::FromArgs, Debug)]
+struct Args {}
 
-impl crate::CommandHandler for EchoCommand {
-  fn name(&self, _ctx: &crate::Pirs) -> &str {
-    "echo"
-  }
-
-  fn handle(&self, args: Vec<&str>, ctx: &crate::Pirs) -> i32 {
+pub const ECHO_COMMAND: crate::Command = crate::Command {
+  name: "echo",
+  handler: |args, ctx| {
     ctx.logger.raw(&args.join(" "));
 
     0
-  }
-}
+  },
+};

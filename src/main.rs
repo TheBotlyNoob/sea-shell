@@ -1,5 +1,5 @@
 fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-  let clap_app = clap::app_from_crate!().get_matches();
+  // let clap_app = clap::app_from_crate!().get_matches();
 
   let mut rl = rustyline::Editor::<()>::new();
 

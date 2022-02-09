@@ -1,22 +1,17 @@
-#[derive(Debug)]
-pub struct HelpCommand;
-
-impl crate::CommandHandler for HelpCommand {
-  fn name(&self, _ctx: &crate::Pirs) -> &str {
-    "help"
-  }
-
-  fn handle(&self, args: Vec<&str>, ctx: &crate::Pirs) -> i32 {
+pub const HELP_COMMAND: crate::Command = crate::Command {
+  name: "help",
+  handler: |args, ctx| {
     if args.is_empty() {
       for command in &ctx.state.commands {
         ctx.logger.raw(&format!(
           "{}:\n  {}\n",
-          command.name(ctx),
-          command.clap(ctx),
+          command.name,
+          // command.clap(ctx),
+          ""
         ));
       }
     }
 
     0
-  }
-}
+  },
+};

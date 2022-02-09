@@ -7,7 +7,6 @@ pub mod commands;
 
 pub mod lexer;
 
-#[derive(Debug)]
 pub struct Pirs {
   pub state: State,
   exit_handler: fn(i32),
@@ -31,7 +30,7 @@ impl Pirs {
 
     Self {
       exit_handler,
-      state: State::new(commands::BUILT_IN_COMMANDS()),
+      state: State::new(commands::BUILT_IN_COMMANDS),
       logger,
     }
   }
@@ -54,12 +53,12 @@ impl Pirs {
       .state
       .commands
       .iter()
-      .find(|command| command.name(self) == &**command_name)
+      .find(|command| command.name == &**command_name)
     {
       Some(command) => {
         self.logger.debug(&f!("executing: {}...", command_name));
 
-        command.handle(cmd.iter().skip(1).map(|arg| &**arg).collect(), self)
+        (command.handler)(cmd.iter().skip(1).map(|arg| &**arg).collect(), self)
       }
       None => {
         self.logger.error(&f!("command not found: {}", cmd[0]));
@@ -72,12 +71,10 @@ impl Pirs {
   }
 }
 
-pub trait CommandHandler: Sync + Send + std::fmt::Debug + 'static {
-  fn name(&self, ctx: &Pirs) -> &str;
-
-  fn handle(&self, args: Vec<&str>, ctx: &Pirs) -> i32;
-
-  fn args(&self, ctx: &Pirs) -> dyn argh::FromArgs;
+#[derive(Clone)]
+pub struct Command {
+  name: &'static str,
+  handler: fn(Vec<&str>, &Pirs) -> i32,
 }
 
 pub trait Logger: Sync + std::fmt::Debug + Send + 'static {

@@ -1,17 +1,17 @@
 use std::collections::HashMap;
 
-#[derive(Debug)]
+#[derive(Clone)]
 pub struct State {
   pub environment: HashMap<String, String>,
   pub prompt: String,
   pub supports_unicode: bool,
   pub history: Vec<String>,
-  pub commands: Vec<Box<dyn crate::CommandHandler>>,
+  pub commands: Vec<crate::Command>,
   pub last_exit_code: i32,
 }
 
 impl State {
-  pub fn new(commands: Vec<Box<dyn crate::CommandHandler>>) -> Self {
+  pub fn new(commands: &[crate::Command]) -> Self {
     let supports_unicode = if std::env::consts::OS == "windows" {
       // Just a handful of things!
       std::env::var("CI").is_ok()
@@ -41,7 +41,7 @@ impl State {
       },
       supports_unicode,
       prompt: if supports_unicode { "❯ " } else { "> " }.into(),
-      commands,
+      commands: commands.to_vec(),
       history: Vec::new(),
       last_exit_code: 0,
     }

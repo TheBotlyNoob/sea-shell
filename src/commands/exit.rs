@@ -1,6 +1,6 @@
 pub const EXIT_COMMAND: crate::Command = crate::Command {
   name: "exit",
-  handler: |args, ctx| {
+  handler: |ctx, args| {
     let mut code = 0;
 
     if !args.is_empty() {

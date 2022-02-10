@@ -58,7 +58,7 @@ impl Pirs {
       Some(command) => {
         self.logger.debug(&f!("executing: {}...", command_name));
 
-        (command.handler)(cmd.iter().skip(1).map(|arg| &**arg).collect(), self)
+        (command.handler)(self, cmd.iter().skip(1).map(|arg| &**arg).collect())
       }
       None => {
         self.logger.error(&f!("command not found: {}", cmd[0]));
@@ -74,7 +74,7 @@ impl Pirs {
 #[derive(Clone)]
 pub struct Command {
   name: &'static str,
-  handler: fn(Vec<&str>, &Pirs) -> i32,
+  handler: fn(&Pirs, Vec<&str>) -> i32,
 }
 
 pub trait Logger: Sync + std::fmt::Debug + Send + 'static {

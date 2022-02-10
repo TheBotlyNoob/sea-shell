@@ -1,6 +1,6 @@
 pub const HELP_COMMAND: crate::Command = crate::Command {
   name: "help",
-  handler: |args, ctx| {
+  handler: |ctx, args| {
     if args.is_empty() {
       for command in &ctx.state.commands {
         ctx.logger.raw(&format!(

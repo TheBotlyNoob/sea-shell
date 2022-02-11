@@ -1,11 +1,12 @@
 use std::format as f;
 
 mod state;
+use lexer::tokenize_command;
 pub use state::State;
 
 pub mod commands;
 
-pub mod lexer;
+pub(crate) mod lexer;
 
 pub struct Pirs {
   pub state: State,
@@ -19,10 +20,12 @@ impl Pirs {
     #[cfg(not(feature = "use-default-logger"))] logger: impl Logger,
     #[cfg(feature = "use-default-logger")] log_level: LogLevel,
   ) -> Self {
+    let supports_unicode = supports_unicode::on(supports_unicode::Stream::Stdout);
+
     #[cfg(not(feature = "use-default-logger"))]
     let logger = Box::new(logger);
     #[cfg(feature = "use-default-logger")]
-    let logger = Box::new(default_logger::DefaultLogger(log_level));
+    let logger = Box::new(default_logger::DefaultLogger(log_level, supports_unicode));
 
     logger.info(&"Welcome to Pirs, A POSIX-like shell written in Rust");
     logger.info(&"Type 'help' for a list of commands");
@@ -30,44 +33,35 @@ impl Pirs {
 
     Self {
       exit_handler,
-      state: State::new(commands::BUILT_IN_COMMANDS),
+      state: State::new(commands::BUILT_IN_COMMANDS, supports_unicode),
       logger,
     }
   }
 
-  pub fn handle_command(&mut self, command: impl AsRef<str>) {
-    let command = command.as_ref().trim();
+  pub fn handle_command(&mut self, input: impl AsRef<str>) {
+    let tokenized = tokenize_command(input);
 
-    if command.is_empty() {
-      return;
+    for token in tokenized {
+      let code = match self
+        .state
+        .commands
+        .iter()
+        .find(|command| command.name == token[0])
+      {
+        Some(command) => {
+          self.logger.debug(&f!("executing: {}...", token[0]));
+
+          (command.handler)(self, token.iter().skip(1).map(|arg| &**arg).collect())
+        }
+        None => {
+          self.logger.error(&f!("command not found: {}", token[0]));
+
+          1
+        }
+      };
+
+      self.state.set_last_exit_code(code);
     }
-
-    let cmd = command
-      .split_whitespace()
-      .map(|arg| arg.trim().into())
-      .collect::<Vec<String>>();
-
-    let command_name = &cmd[0];
-
-    let code = match self
-      .state
-      .commands
-      .iter()
-      .find(|command| command.name == &**command_name)
-    {
-      Some(command) => {
-        self.logger.debug(&f!("executing: {}...", command_name));
-
-        (command.handler)(self, cmd.iter().skip(1).map(|arg| &**arg).collect())
-      }
-      None => {
-        self.logger.error(&f!("command not found: {}", cmd[0]));
-
-        1
-      }
-    };
-
-    self.state.set_last_exit_code(code);
   }
 }
 
@@ -105,7 +99,7 @@ mod default_logger {
   }
 
   #[derive(Debug)]
-  pub struct DefaultLogger(pub LogLevel);
+  pub struct DefaultLogger(pub LogLevel, pub bool);
 
   impl DefaultLogger {
     pub fn log_level(&self) -> u8 {
@@ -130,25 +124,57 @@ mod default_logger {
   impl super::Logger for DefaultLogger {
     fn debug(&self, message: &dyn AsRef<str>) {
       if self.log_level() >= 4 {
-        println!("[{}]: {}", "debug".blue(), message.as_ref());
+        println!(
+          "[{}]: {}",
+          if self.1 {
+            "debug".bright_blue().to_string()
+          } else {
+            "debug".into()
+          },
+          message.as_ref()
+        );
       }
     }
 
     fn info(&self, message: &dyn AsRef<str>) {
       if self.log_level() >= 3 {
-        println!("[{}]: {}", "info".green(), message.as_ref());
+        println!(
+          "[{}]: {}",
+          if self.1 {
+            "info".green().to_string()
+          } else {
+            "info".into()
+          },
+          message.as_ref()
+        );
       }
     }
 
     fn warn(&self, message: &dyn AsRef<str>) {
       if self.log_level() >= 2 {
-        println!("[{}]: {}", "warn".yellow(), message.as_ref());
+        println!(
+          "[{}]: {}",
+          if self.1 {
+            "warn".yellow().to_string()
+          } else {
+            "warn".into()
+          },
+          message.as_ref()
+        );
       }
     }
 
     fn error(&self, message: &dyn AsRef<str>) {
       if self.log_level() >= 1 {
-        println!("[{}]: {}", "error".bright_red(), message.as_ref());
+        println!(
+          "[{}]: {}",
+          if self.1 {
+            "error".bright_red().to_string()
+          } else {
+            "error".into()
+          },
+          message.as_ref()
+        );
       }
     }
 

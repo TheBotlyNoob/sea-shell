@@ -14,15 +14,9 @@ pub fn tokenize_command(input: impl AsRef<str>) -> Vec<Vec<Token>> {
           if index == 0 {
             Token::new(TokenValue::Command(raw_token.into()), raw_token)
           } else if let Some(long_flag) = raw_token.strip_prefix("--") {
-            Token::new(
-              TokenValue::LongFlag(long_flag.into()),
-              format!("--{}", raw_token),
-            )
+            Token::new(TokenValue::LongFlag(long_flag.into()), raw_token)
           } else if let Some(short_flag) = raw_token.strip_prefix('-') {
-            Token::new(
-              TokenValue::ShortFlag(short_flag.into()),
-              format!("-{}", raw_token),
-            )
+            Token::new(TokenValue::ShortFlag(short_flag.into()), raw_token)
           } else {
             Token::new(TokenValue::PositionalArgument(raw_token.into()), raw_token)
           }

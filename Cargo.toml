@@ -7,17 +7,17 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-libc = { version = "0.2", features = ["const-extern-fn", "extra_traits"] }
+supports-unicode = { git = "https://github.com/pirs-sh/supports-unicode" }
 
 owo-colors = { version = "3.2", optional = true }
-supports-unicode = { version = "1.0", optional = true }
 
 rustyline = { version = "9.1", optional = true }
 dirs = { version = "4.0", optional = true }
 
 [profile.release]
 lto = true
-strip = "symbols"
+# FIXME: uncomment when Cargo version 1.59 is stable
+# strip = "symbols"
 
 [[bin]]
 name = "pirs"
@@ -26,5 +26,5 @@ required-features = ["cli"]
 [features]
 default = ["cli"]
 
-use-default-logger = ["owo-colors", "supports-unicode"]
+use-default-logger = ["owo-colors"]
 cli = ["rustyline", "use-default-logger", "dirs"]

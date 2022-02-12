@@ -41,26 +41,34 @@ impl Pirs {
   pub fn handle_command(&mut self, input: impl AsRef<str>) {
     let tokenized = tokenize_command(input);
 
-    for token in tokenized {
-      let code = match self
-        .state
-        .commands
-        .iter()
-        .find(|command| command.name == token[0])
-      {
-        Some(command) => {
-          self.logger.debug(&f!("executing: {}...", token[0]));
+    println!("{:#?}", tokenized);
 
-          (command.handler)(self, token.iter().skip(1).map(|arg| &**arg).collect())
+    for tokens in tokenized {
+      for token in &tokens {
+        if let lexer::TokenValue::Command(given_command) = &token.token_value {
+          let code = match self
+            .state
+            .commands
+            .iter()
+            .find(|command| command.name == given_command)
+          {
+            Some(command) => {
+              self.logger.debug(&f!("executing: {}...", given_command));
+
+              (command.handler)(self, tokens.clone())
+            }
+            None => {
+              self
+                .logger
+                .error(&f!("command not found: {}", given_command));
+
+              1
+            }
+          };
+
+          self.state.set_last_exit_code(code);
         }
-        None => {
-          self.logger.error(&f!("command not found: {}", token[0]));
-
-          1
-        }
-      };
-
-      self.state.set_last_exit_code(code);
+      }
     }
   }
 }
@@ -68,7 +76,7 @@ impl Pirs {
 #[derive(Clone)]
 pub struct Command {
   name: &'static str,
-  handler: fn(&Pirs, Vec<&str>) -> i32,
+  handler: fn(&Pirs, Vec<lexer::Token>) -> i32,
 }
 
 pub trait Logger: Sync + std::fmt::Debug + Send + 'static {

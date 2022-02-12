@@ -30,4 +30,8 @@ impl State {
     self.last_exit_code = code;
     self.environment.insert("last-exit-code".into(), "0".into());
   }
+
+  pub fn colored_prompt(&self) -> String {
+    self.prompt.clone()
+  }
 }

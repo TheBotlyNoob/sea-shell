@@ -1,7 +1,7 @@
-fn main() {
-  // let clap_app = clap::app_from_crate!().get_matches();
+use rustyline::{error::ReadlineError, Editor};
 
-  let mut rl = rustyline::Editor::<()>::new();
+fn main() {
+  let mut rl = Editor::<()>::new();
 
   let rl_history_file = format!("{}/.pirs_history", dirs::home_dir().unwrap().display());
 
@@ -13,9 +13,15 @@ fn main() {
     pirs::LogLevel::Info,
   );
 
-  while let Ok(input) = rl.readline(&pirs.state.prompt) {
-    rl.add_history_entry(&input);
-    pirs.handle_command(input);
+  loop {
+    match rl.readline(&pirs.state.prompt) {
+      Ok(input) => {
+        rl.add_history_entry(&input);
+        pirs.handle_command(input);
+      }
+      Err(ReadlineError::Interrupted) => continue,
+      _ => break,
+    }
   }
 
   rl.save_history(&rl_history_file).ok();

@@ -1,6 +1,6 @@
 [package]
 name = "pirs"
-description = "A POSIX-like shell written in Rust"
+description = "A portable POSIX-like shell written in Rust"
 version = "0.1.0"
 edition = "2021"
 

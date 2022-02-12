@@ -27,7 +27,7 @@ impl Pirs {
     #[cfg(feature = "use-default-logger")]
     let logger = Box::new(default_logger::DefaultLogger(log_level, supports_unicode));
 
-    logger.info(&"Welcome to Pirs, A POSIX-like shell written in Rust");
+    logger.info(&"Welcome to Pirs, A portable POSIX-like shell written in Rust");
     logger.info(&"Type 'help' for a list of commands");
     logger.raw(&"\n");
 

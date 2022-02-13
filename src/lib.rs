@@ -10,13 +10,13 @@ pub(crate) mod lexer;
 pub struct Pirs<'a> {
   pub state: State,
   exit_handler: Box<dyn Fn(i32) + 'a>,
-  pub logger: Box<dyn Logger>,
+  pub logger: Box<dyn Logger + 'a>,
 }
 
 impl<'a> Pirs<'a> {
   pub fn new(
     exit_handler: impl Fn(i32) + 'a,
-    #[cfg(not(feature = "use-default-logger"))] logger: impl Logger,
+    #[cfg(not(feature = "use-default-logger"))] logger: impl Logger + 'a,
     #[cfg(feature = "use-default-logger")] log_level: LogLevel,
   ) -> Self {
     let supports_unicode = supports_unicode::on(supports_unicode::Stream::Stdout);

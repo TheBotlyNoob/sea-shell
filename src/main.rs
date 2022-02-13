@@ -1,34 +1,31 @@
 use rustyline::{error::ReadlineError, Editor};
-use std::sync;
 
 fn main() {
-  let mut rl = Editor::<()>::new();
+  let rl = std::cell::RefCell::new(Editor::<()>::new());
 
   let rl_history_file = format!("{}/.pirs_history", dirs::home_dir().unwrap().display());
 
-  rl.load_history(&*rl_history_file).ok();
+  rl.borrow_mut().load_history(&*rl_history_file).ok();
 
-  let _rl_history_file = rl_history_file.clone();
   let mut pirs = pirs::Pirs::new(
     #[allow(clippy::redundant_closure)]
     |code| {
-      rl.save_history(&*_rl_history_file).unwrap();
+      rl.borrow_mut().save_history(&rl_history_file).unwrap();
 
       std::process::exit(code)
     },
     pirs::LogLevel::Info,
   );
 
+  let mut _rl = Editor::<()>::new();
   loop {
-    match rl.readline(&pirs.state.prompt) {
+    match _rl.readline(&pirs.state.prompt) {
       Ok(input) => {
-        rl.add_history_entry(&input);
+        rl.borrow_mut().add_history_entry(&input);
         pirs.handle_command(input);
       }
       Err(ReadlineError::Interrupted) => continue,
       _ => break,
     }
   }
-
-  rl.save_history(&*rl_history_file).unwrap();
 }

@@ -84,7 +84,7 @@ pub struct Command {
   handler: fn(&Pirs, Vec<lexer::Token>) -> i32,
 }
 
-pub trait Logger: Sync + std::fmt::Debug + Send + 'static {
+pub trait Logger {
   fn debug(&self, message: &str);
 
   fn info(&self, message: &str);

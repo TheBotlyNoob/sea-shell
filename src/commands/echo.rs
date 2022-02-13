@@ -4,8 +4,7 @@ pub const ECHO_COMMAND: crate::Command = crate::Command {
     ctx.logger.raw(
       &args
         .iter()
-        .skip(1)
-        .map(|arg| &*arg.raw_token)
+        .map(|arg| &**arg)
         .collect::<Vec<&str>>()
         .join(" "),
     );

@@ -5,8 +5,6 @@ pub use state::State;
 
 pub mod commands;
 
-pub(crate) mod lexer;
-
 pub struct Pirs<'a> {
   pub state: State,
   exit_handler: Box<dyn Fn(i32) + 'a>,
@@ -38,37 +36,30 @@ impl<'a> Pirs<'a> {
   }
 
   pub fn handle_command(&mut self, input: impl AsRef<str>) {
-    let tokenized = lexer::tokenize_command(input);
+    let input = input.as_ref().split_whitespace().collect::<Vec<&str>>();
 
-    println!("{:#?}", tokenized);
+    let code = match self
+      .state
+      .commands
+      .iter()
+      .find(|command| command.name == input[0])
+    {
+      Some(command) => {
+        self.logger.debug(&f!("executing: {}...", input[0]));
 
-    for tokens in tokenized {
-      for token in &tokens {
-        if let lexer::TokenValue::Command(given_command) = &token.token_value {
-          let code = match self
-            .state
-            .commands
-            .iter()
-            .find(|command| command.name == given_command)
-          {
-            Some(command) => {
-              self.logger.debug(&f!("executing: {}...", given_command));
-
-              (command.handler)(self, tokens.clone())
-            }
-            None => {
-              self
-                .logger
-                .error(&f!("command not found: {}", given_command));
-
-              1
-            }
-          };
-
-          self.state.set_last_exit_code(code);
-        }
+        (command.handler)(
+          self,
+          input.iter().skip(1).map(|arg| (*arg).into()).collect(),
+        )
       }
-    }
+      None => {
+        self.logger.error(&f!("command not found: {}", input[0]));
+
+        1
+      }
+    };
+
+    self.state.set_last_exit_code(code);
   }
 }
 
@@ -81,7 +72,7 @@ impl Drop for Pirs<'_> {
 #[derive(Clone)]
 pub struct Command {
   name: &'static str,
-  handler: fn(&Pirs, Vec<lexer::Token>) -> i32,
+  handler: fn(&Pirs, Vec<String>) -> i32,
 }
 
 pub trait Logger {

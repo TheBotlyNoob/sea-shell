@@ -47,10 +47,7 @@ impl<'a> Pirs<'a> {
       Some(command) => {
         self.logger.debug(&f!("executing: {}...", input[0]));
 
-        (command.handler)(
-          self,
-          input.iter().skip(1).map(|arg| (*arg).into()).collect(),
-        )
+        (command.handler)(self, input.iter().skip(1).copied().collect())
       }
       None => {
         self.logger.error(&f!("command not found: {}", input[0]));
@@ -72,7 +69,7 @@ impl Drop for Pirs<'_> {
 #[derive(Clone)]
 pub struct Command {
   name: &'static str,
-  handler: fn(&Pirs, Vec<String>) -> i32,
+  handler: fn(&Pirs, Vec<&str>) -> i32,
 }
 
 pub trait Logger {

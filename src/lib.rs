@@ -5,6 +5,8 @@ pub use state::State;
 
 pub mod commands;
 
+pub const VERSION: &str = "0.0.1";
+
 pub struct Pirs<'a> {
   pub state: State,
   exit_handler: Box<dyn Fn(i32) + 'a>,
@@ -38,12 +40,7 @@ impl<'a> Pirs<'a> {
   pub fn handle_command(&mut self, input: impl AsRef<str>) {
     let input = input.as_ref().split_whitespace().collect::<Vec<&str>>();
 
-    let code = match self
-      .state
-      .commands
-      .iter()
-      .find(|command| command.name == input[0])
-    {
+    let code = match self.get_command(input[0]) {
       Some(command) => {
         self.logger.debug(&f!("executing: {}...", input[0]));
 
@@ -57,6 +54,12 @@ impl<'a> Pirs<'a> {
     };
 
     self.state.set_last_exit_code(code);
+  }
+
+  pub fn get_command(&self, command: impl AsRef<str>) -> Option<&Command> {
+    let command = command.as_ref();
+
+    self.state.commands.iter().find(|c| c.name == command)
   }
 }
 

@@ -19,7 +19,8 @@ impl<'a> Pirs<'a> {
     #[cfg(not(feature = "use-default-logger"))] logger: impl Logger + 'a,
     #[cfg(feature = "use-default-logger")] log_level: LogLevel,
   ) -> Self {
-    let supports_unicode = supports_unicode::on(supports_unicode::Stream::Stdout);
+    let supports_unicode =
+      supports_unicode__used_for_pirs::on(supports_unicode__used_for_pirs::Stream::Stdout);
 
     #[cfg(not(feature = "use-default-logger"))]
     let logger = Box::new(logger);

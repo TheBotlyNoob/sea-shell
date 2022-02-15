@@ -237,7 +237,7 @@ dependencies = [
  "dirs",
  "owo-colors",
  "rustyline",
- "supports-unicode",
+ "supports-unicode--used-for-pirs",
 ]
 
 [[package]]
@@ -326,9 +326,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d44a3643b4ff9caf57abcee9c2c621d6c03d9135e0d8b589bd9afb5992cb176a"
 
 [[package]]
-name = "supports-unicode"
-version = "1.0.3-alpha.0"
-source = "git+https://github.com/pirs-rs/supports-unicode#545d5f9c2ee456578821e139b1e2ddc0391761fb"
+name = "supports-unicode--used-for-pirs"
+version = "1.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "34db56eca6e454dcf579b1106458170e7627362b3fdec73b195f860e81758e9a"
 dependencies = [
  "atty",
 ]

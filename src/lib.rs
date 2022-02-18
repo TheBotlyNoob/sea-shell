@@ -41,6 +41,10 @@ impl<'a> Pirs<'a> {
   pub fn handle_command(&mut self, input: &impl AsRef<str>) {
     let input = input.as_ref().split_whitespace().collect::<Vec<&str>>();
 
+    if input.is_empty() {
+      return;
+    }
+
     let code = match self.get_command(input[0]) {
       Some(command) => {
         self.logger.debug(&f!("executing: {}...", input[0]));

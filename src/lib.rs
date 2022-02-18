@@ -38,7 +38,7 @@ impl<'a> Pirs<'a> {
     }
   }
 
-  pub fn handle_command(&mut self, input: impl AsRef<str>) {
+  pub fn handle_command(&mut self, input: &impl AsRef<str>) {
     let input = input.as_ref().split_whitespace().collect::<Vec<&str>>();
 
     let code = match self.get_command(input[0]) {

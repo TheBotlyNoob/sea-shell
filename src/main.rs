@@ -21,7 +21,7 @@ fn main() {
     match _rl.readline(&pirs.state.prompt) {
       Ok(input) => {
         rl.borrow_mut().add_history_entry(&input);
-        pirs.handle_command(input);
+        pirs.handle_command(&input);
       }
       Err(ReadlineError::Interrupted) => pirs.logger.info("use Ctrl-D or type exit to exit"),
       _ => break,

@@ -25,7 +25,5 @@ name = "pirs"
 required-features = ["cli"]
 
 [features]
-default = ["cli"]
-
 use-default-logger = ["owo-colors"]
 cli = ["rustyline", "use-default-logger", "dirs"]

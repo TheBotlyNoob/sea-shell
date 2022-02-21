@@ -2,6 +2,8 @@
 name = "pirs"
 description = "A portable POSIX-like shell written in Rust"
 version = "0.0.5"
+repository = "https://github.com/pirs-rs/pirs"
+homepage = "https://pirs.ml"
 license = "MIT"
 edition = "2021"
 

@@ -39,7 +39,19 @@ impl<'a> Pirs<'a> {
   }
 
   pub fn handle_command(&mut self, input: &impl AsRef<str>) {
-    let input = input.as_ref().split_whitespace().collect::<Vec<&str>>();
+    let input = input
+      .as_ref()
+      .split_whitespace()
+      .filter_map(|input| {
+        let trimmed = input.trim();
+
+        if trimmed.is_empty() {
+          None
+        } else {
+          Some(trimmed)
+        }
+      })
+      .collect::<Vec<&str>>();
 
     if input.is_empty() {
       return;

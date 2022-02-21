@@ -1,7 +1,7 @@
 [package]
 name = "pirs"
 description = "A portable POSIX-like shell written in Rust"
-version = "0.0.5"
+version = "0.0.6"
 repository = "https://github.com/pirs-rs/pirs"
 homepage = "https://pirs.ml"
 license = "MIT"

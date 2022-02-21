@@ -232,7 +232,7 @@ checksum = "20448fd678ec04e6ea15bbe0476874af65e98a01515d667aa49f1434dc44ebf4"
 
 [[package]]
 name = "pirs"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "dirs",
  "owo-colors",

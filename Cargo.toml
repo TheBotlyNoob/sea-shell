@@ -1,7 +1,7 @@
 [package]
 name = "pirs"
 description = "A portable Bash-like shell written in Rust"
-version = "0.0.7"
+version = "0.0.8"
 repository = "https://github.com/pirs-rs/pirs"
 homepage = "https://pirs.ml"
 license = "MIT"
@@ -19,7 +19,7 @@ cfg-iif = "0.2"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen = { version = "0.2", optional = true }
-web-sys = { version = "0.3", optional = true, features = ["HtmlElement"] }
+web-sys = { version = "0.3", optional = true, features = ["Element"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 owo-colors = { version = "3.2", optional = true }

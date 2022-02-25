@@ -5,7 +5,10 @@ pub use state::State;
 
 pub mod commands;
 
+pub use supports_unicode__used_for_pirs as supports_unicode;
+
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+pub const DESCRIPTION: &str = env!("CARGO_PKG_DESCRIPTION");
 
 pub struct Pirs<'a> {
   pub state: State,
@@ -14,20 +17,13 @@ pub struct Pirs<'a> {
 }
 
 impl<'a> Pirs<'a> {
-  pub fn new(
-    exit_handler: impl Fn(i32) + 'a,
-    #[cfg(not(feature = "use-default-logger"))] logger: impl Logger + 'a,
-    #[cfg(feature = "use-default-logger")] log_level: LogLevel,
-  ) -> Self {
-    let supports_unicode =
-      supports_unicode__used_for_pirs::on(supports_unicode__used_for_pirs::Stream::Stdout);
+  pub fn new(exit_handler: impl Fn(i32) + 'a, logger: impl Logger + 'a) -> Self {
+    let supports_unicode = supports_unicode::on(supports_unicode::Stream::Stdout);
 
-    #[cfg(not(feature = "use-default-logger"))]
     let logger = Box::new(logger);
-    #[cfg(feature = "use-default-logger")]
-    let logger = Box::new(default_logger::DefaultLogger(log_level, supports_unicode));
 
-    logger.info("Welcome to Pirs, A portable POSIX-like shell written in Rust");
+    logger.info(&format!("Welcome to pirs version: {}", VERSION));
+    logger.info(DESCRIPTION);
     logger.info("Type 'help' for a list of commands");
     logger.raw("\n");
 
@@ -38,7 +34,7 @@ impl<'a> Pirs<'a> {
     }
   }
 
-  pub fn handle_command(&mut self, input: &impl AsRef<str>) {
+  pub async fn handle_command(&mut self, input: &impl AsRef<str>) {
     let input = input
       .as_ref()
       .split_whitespace()
@@ -80,6 +76,7 @@ impl<'a> Pirs<'a> {
   }
 }
 
+#[cfg(feature = "exit-on-drop")]
 impl Drop for Pirs<'_> {
   fn drop(&mut self) {
     (self.exit_handler)(0);
@@ -104,8 +101,5 @@ pub trait Logger {
   fn raw(&self, message: &str);
 }
 
-#[cfg(feature = "use-default-logger")]
-pub use default_logger::LogLevel;
-
-#[cfg(feature = "use-default-logger")]
-mod default_logger;
+#[cfg(feature = "default-logger")]
+pub mod default_logger;

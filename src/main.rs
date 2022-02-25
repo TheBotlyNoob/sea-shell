@@ -1,6 +1,7 @@
 use rustyline::{error::ReadlineError, Editor};
 
-fn main() {
+#[tokio::main]
+async fn main() {
   let rl = std::cell::RefCell::new(Editor::<()>::new());
 
   let rl_history_file = format!("{}/.pirs_history", dirs::home_dir().unwrap().display());
@@ -13,7 +14,7 @@ fn main() {
 
       std::process::exit(code)
     },
-    pirs::LogLevel::Info,
+    pirs::default_logger::DefaultLogger::new(pirs::default_logger::LogLevel::Info),
   );
 
   let mut _rl = Editor::<()>::new();
@@ -21,7 +22,7 @@ fn main() {
     match _rl.readline(&pirs.state.prompt) {
       Ok(input) => {
         rl.borrow_mut().add_history_entry(&input);
-        pirs.handle_command(&input);
+        pirs.handle_command(&input).await;
       }
       Err(ReadlineError::Interrupted) => pirs.logger.info("use Ctrl-D or type exit to exit"),
       _ => break,

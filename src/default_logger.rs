@@ -10,12 +10,14 @@ pub enum LogLevel {
   Error = 1,
 }
 
+#[derive(Debug, Clone)]
 #[cfg(not(target_arch = "wasm32"))]
 pub struct DefaultLogger {
   pub log_level: u8,
   unicode_supported: bool,
 }
 
+#[derive(Debug, Clone)]
 #[cfg(target_arch = "wasm32")]
 pub struct DefaultLogger<T: Clone + Into<web_sys::Element>> {
   pub log_level: u8,

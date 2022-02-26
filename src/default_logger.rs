@@ -55,7 +55,7 @@ impl super::Logger for DefaultLogger {
         } else {
           "debug".into()
         },
-        message.replace("<", "&lt;")
+        message
       );
     }
   }
@@ -69,7 +69,7 @@ impl super::Logger for DefaultLogger {
         } else {
           "info".into()
         },
-        message.replace("<", "&lt;")
+        message
       );
     }
   }
@@ -83,7 +83,7 @@ impl super::Logger for DefaultLogger {
         } else {
           "warn".into()
         },
-        message.replace("<", "&lt;")
+        message
       );
     }
   }
@@ -97,7 +97,7 @@ impl super::Logger for DefaultLogger {
         } else {
           "error".into()
         },
-        message.replace("<", "&lt;")
+        message
       );
     }
   }
@@ -134,7 +134,7 @@ impl<T: Clone + Into<web_sys::Element>> crate::Logger for DefaultLogger<T> {
     if self.log_level >= 4 {
       self.log(format!(
         "[<span style=\"color:#00BFFF\">debug</span>]: {}",
-        message.replace("<", "&lt;")
+        message.replace('<', "&lt;")
       ));
     }
   }
@@ -143,7 +143,7 @@ impl<T: Clone + Into<web_sys::Element>> crate::Logger for DefaultLogger<T> {
     if self.log_level >= 3 {
       self.log(format!(
         "[<span style=\"color:#00FF00\">info</span>]: {}",
-        message.replace("<", "&lt;")
+        message.replace('<', "&lt;")
       ));
     }
   }
@@ -152,7 +152,7 @@ impl<T: Clone + Into<web_sys::Element>> crate::Logger for DefaultLogger<T> {
     if self.log_level >= 2 {
       self.log(format!(
         "[<span style=\"color:#FFFF00\">warn</span>]: {}",
-        message.replace("<", "&lt;")
+        message.replace('<', "&lt;")
       ));
     }
   }
@@ -161,12 +161,12 @@ impl<T: Clone + Into<web_sys::Element>> crate::Logger for DefaultLogger<T> {
     if self.log_level >= 1 {
       self.log(format!(
         "[<span style=\"color:#FF0000\">error</span>]: {}",
-        message.replace("<", "&lt;")
+        message.replace('<', "&lt;")
       ));
     }
   }
 
   fn raw(&self, message: &str) {
-    println!("{}", message)
+    self.log(message.replace('<', "&lt;"));
   }
 }

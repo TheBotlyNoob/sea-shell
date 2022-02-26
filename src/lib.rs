@@ -1,5 +1,3 @@
-use std::format as f;
-
 mod state;
 pub use state::State;
 
@@ -55,12 +53,14 @@ impl<'a> Pirs<'a> {
 
     let code = match self.get_command(input[0]) {
       Some(command) => {
-        self.logger.debug(&f!("executing: {}...", input[0]));
+        self.logger.debug(&format!("executing: {}...", input[0]));
 
         (command.handler)(self, input.iter().skip(1).copied().collect())
       }
       None => {
-        self.logger.error(&f!("command not found: {}", input[0]));
+        self
+          .logger
+          .error(&format!("command not found: {}", input[0]));
 
         1
       }

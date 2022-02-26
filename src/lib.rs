@@ -32,9 +32,10 @@ impl<'a> Pirs<'a> {
     }
   }
 
-  pub async fn handle_command(&mut self, input: &impl AsRef<str>) {
-    let input = input
-      .as_ref()
+  pub async fn handle_command(&mut self, input: impl AsRef<str>) {
+    let input_ = input.as_ref();
+
+    let input = input_
       .split_whitespace()
       .filter_map(|input| {
         let trimmed = input.trim();
@@ -50,6 +51,8 @@ impl<'a> Pirs<'a> {
     if input.is_empty() {
       return;
     }
+
+    self.state.history.push(input_.into());
 
     let code = match self.get_command(input[0]) {
       Some(command) => {

@@ -7,9 +7,9 @@ pub const EXIT_COMMAND: crate::Command = crate::Command {
         |raw_exit_code| raw_exit_code.parse::<i32>().unwrap_or(0),
       );
 
-      if let Some(exit_handler) = ctx.exit_handler.take() {
-        (exit_handler)(code, ctx);
-      }
+      let exit_handler = ctx.exit_handler.clone();
+
+      exit_handler(code, &mut ctx);
 
       (None, code)
     })

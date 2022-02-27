@@ -1,4 +1,4 @@
-use std::{future::Future as Future_, pin::Pin};
+use std::{future::Future as Future_, pin::Pin, sync::Arc};
 
 mod state;
 
@@ -13,12 +13,22 @@ pub const DESCRIPTION: &str = env!("CARGO_PKG_DESCRIPTION");
 
 pub struct Pirs<'a> {
   pub state: State,
-  exit_handler: Option<Box<dyn FnOnce(i32, Self) + 'a>>,
+  exit_handler: Arc<Box<dyn Fn(i32, &mut Self) + 'a>>,
   pub logger: Box<dyn Logger + 'a>,
 }
 
+impl<'a> Clone for Pirs<'a> {
+  fn clone(&self) -> Self {
+    Self {
+      state: self.state.clone(),
+      exit_handler: self.exit_handler.clone(),
+      logger: dyn_clone::clone_box(&*self.logger),
+    }
+  }
+}
+
 impl<'a> Pirs<'a> {
-  pub fn new(exit_handler: impl Fn(i32, Self) + 'a, logger: impl Logger + 'a) -> Self {
+  pub fn new(exit_handler: impl Fn(i32, &mut Self) + 'a, logger: impl Logger + 'a) -> Self {
     let supports_unicode = supports_unicode::on(supports_unicode::Stream::Stdout);
 
     logger.info(&format!("Welcome to pirs version: {}", VERSION));
@@ -27,13 +37,13 @@ impl<'a> Pirs<'a> {
     logger.raw("\n");
 
     Self {
-      exit_handler: Some(Box::new(exit_handler)),
+      exit_handler: Arc::new(Box::new(exit_handler)),
       state: State::new(commands::BUILT_IN_COMMANDS, supports_unicode),
       logger: Box::new(logger),
     }
   }
 
-  pub async fn handle_command(mut self, input: impl AsRef<str>) -> Option<Pirs<'a>> {
+  pub async fn handle_command(&mut self, input: impl AsRef<str>) {
     let input_ = input.as_ref();
 
     let input = input_
@@ -50,7 +60,7 @@ impl<'a> Pirs<'a> {
       .collect::<Vec<String>>();
 
     if input.is_empty() {
-      return Some(self);
+      return;
     }
 
     self.state.history.push(input_.into());
@@ -59,12 +69,12 @@ impl<'a> Pirs<'a> {
       Some(command) => {
         self.logger.debug(&format!("executing: {}...", input[0]));
 
-        let out = (command.handler)(self, input.into_iter().skip(1).collect()).await;
+        let out = (command.handler)(self.clone(), input.into_iter().skip(1).collect()).await;
 
         if let Some(self_) = out.0 {
-          self = self_;
+          *self = self_;
         } else {
-          return None;
+          return;
         }
 
         out.1
@@ -79,8 +89,6 @@ impl<'a> Pirs<'a> {
     };
 
     self.state.set_last_exit_code(code);
-
-    Some(self)
   }
 
   pub fn get_command(&self, command: impl AsRef<str>) -> Option<&Command> {
@@ -97,7 +105,7 @@ pub struct Command {
   handler: for<'a> fn(Pirs<'a>, Vec<String>) -> Future<'a, (Option<Pirs<'a>>, i32)>,
 }
 
-pub trait Logger {
+pub trait Logger: dyn_clone::DynClone {
   fn debug(&self, message: &str);
 
   fn info(&self, message: &str);

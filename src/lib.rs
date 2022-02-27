@@ -1,4 +1,7 @@
+use std::{future::Future as Future_, pin::Pin};
+
 mod state;
+
 pub use state::State;
 
 pub mod commands;
@@ -10,7 +13,7 @@ pub const DESCRIPTION: &str = env!("CARGO_PKG_DESCRIPTION");
 
 pub struct Pirs<'a> {
   pub state: State,
-  exit_handler: Box<dyn Fn(i32) + 'a>,
+  exit_handler: Option<Box<dyn FnOnce(i32) + 'a>>,
   pub logger: Box<dyn Logger + 'a>,
 }
 
@@ -18,21 +21,19 @@ impl<'a> Pirs<'a> {
   pub fn new(exit_handler: impl Fn(i32) + 'a, logger: impl Logger + 'a) -> Self {
     let supports_unicode = supports_unicode::on(supports_unicode::Stream::Stdout);
 
-    let logger = Box::new(logger);
-
     logger.info(&format!("Welcome to pirs version: {}", VERSION));
     logger.info(DESCRIPTION);
     logger.info("Type 'help' for a list of commands");
     logger.raw("\n");
 
     Self {
-      exit_handler: Box::new(exit_handler),
+      exit_handler: Some(Box::new(exit_handler)),
       state: State::new(commands::BUILT_IN_COMMANDS, supports_unicode),
-      logger,
+      logger: Box::new(logger),
     }
   }
 
-  pub async fn handle_command(&mut self, input: impl AsRef<str>) {
+  pub async fn handle_command(mut self, input: impl AsRef<str>) -> Option<Pirs<'a>> {
     let input_ = input.as_ref();
 
     let input = input_
@@ -49,7 +50,7 @@ impl<'a> Pirs<'a> {
       .collect::<Vec<&str>>();
 
     if input.is_empty() {
-      return;
+      return Some(self);
     }
 
     self.state.history.push(input_.into());
@@ -58,7 +59,15 @@ impl<'a> Pirs<'a> {
       Some(command) => {
         self.logger.debug(&format!("executing: {}...", input[0]));
 
-        (command.handler)(self, input.iter().skip(1).copied().collect())
+        let out = (command.handler)(self, input.iter().skip(1).copied().collect()).await;
+
+        if let Some(self_) = out.0 {
+          self = self_;
+        } else {
+          return None;
+        }
+
+        out.1
       }
       None => {
         self
@@ -70,6 +79,8 @@ impl<'a> Pirs<'a> {
     };
 
     self.state.set_last_exit_code(code);
+
+    Some(self)
   }
 
   pub fn get_command(&self, command: impl AsRef<str>) -> Option<&Command> {
@@ -82,14 +93,19 @@ impl<'a> Pirs<'a> {
 #[cfg(feature = "exit-on-drop")]
 impl Drop for Pirs<'_> {
   fn drop(&mut self) {
-    (self.exit_handler)(0);
+    if self.exit_handler.is_some() {
+      (self.exit_handler.take().unwrap())(0);
+    } else {
+      unreachable!();
+    }
   }
 }
 
 #[derive(Clone)]
 pub struct Command {
   name: &'static str,
-  handler: fn(&Pirs, Vec<&str>) -> i32,
+  #[allow(clippy::type_complexity)]
+  handler: for<'a> fn(Pirs<'a>, Vec<&str>) -> Future<'a, (Option<Pirs<'a>>, i32)>,
 }
 
 pub trait Logger {
@@ -103,6 +119,8 @@ pub trait Logger {
 
   fn raw(&self, message: &str);
 }
+
+pub(crate) type Future<'a, T> = Pin<Box<dyn Future_<Output = T> + 'a>>;
 
 #[cfg(feature = "default-logger")]
 pub mod default_logger;

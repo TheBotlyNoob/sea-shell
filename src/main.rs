@@ -12,7 +12,7 @@ async fn main() {
     |code| {
       rl.borrow_mut().save_history(&rl_history_file).unwrap();
 
-      std::process::exit(code)
+      std::process::exit(code);
     },
     pirs::default_logger::DefaultLogger::new(pirs::default_logger::LogLevel::Info),
   );
@@ -22,7 +22,8 @@ async fn main() {
     match _rl.readline(&pirs.state.prompt) {
       Ok(input) => {
         rl.borrow_mut().add_history_entry(&input);
-        pirs.handle_command(&input).await;
+        // cannot be `None`
+        pirs = pirs.handle_command(&input).await.unwrap();
       }
       Err(ReadlineError::Interrupted) => pirs.logger.info("use Ctrl-D or type exit to exit"),
       _ => break,

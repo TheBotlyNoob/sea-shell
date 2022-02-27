@@ -1,8 +1,10 @@
 pub const ECHO_COMMAND: crate::Command = crate::Command {
   name: "echo",
   handler: |ctx, args| {
-    ctx.logger.raw(&args.join(" "));
+    Box::pin({
+      ctx.logger.raw(&args.join(" "));
 
-    0
+      async { (Some(ctx), 0) }
+    })
   },
 };

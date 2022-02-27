@@ -8,6 +8,7 @@ pub enum LogLevel {
   Info = 3,
   Warn = 2,
   Error = 1,
+  None = 0,
 }
 
 #[derive(Debug, Clone)]
@@ -103,7 +104,9 @@ impl super::Logger for DefaultLogger {
   }
 
   fn raw(&self, message: &str) {
-    println!("{}", message)
+    if self.log_level > 0 {
+      println!("{}", message)
+    }
   }
 }
 

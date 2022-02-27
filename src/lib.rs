@@ -13,12 +13,12 @@ pub const DESCRIPTION: &str = env!("CARGO_PKG_DESCRIPTION");
 
 pub struct Pirs<'a> {
   pub state: State,
-  exit_handler: Option<Box<dyn FnOnce(i32) + 'a>>,
+  exit_handler: Option<Box<dyn FnOnce(i32, Self) + 'a>>,
   pub logger: Box<dyn Logger + 'a>,
 }
 
 impl<'a> Pirs<'a> {
-  pub fn new(exit_handler: impl Fn(i32) + 'a, logger: impl Logger + 'a) -> Self {
+  pub fn new(exit_handler: impl Fn(i32, Self) + 'a, logger: impl Logger + 'a) -> Self {
     let supports_unicode = supports_unicode::on(supports_unicode::Stream::Stdout);
 
     logger.info(&format!("Welcome to pirs version: {}", VERSION));
@@ -44,10 +44,10 @@ impl<'a> Pirs<'a> {
         if trimmed.is_empty() {
           None
         } else {
-          Some(trimmed)
+          Some(trimmed.into())
         }
       })
-      .collect::<Vec<&str>>();
+      .collect::<Vec<String>>();
 
     if input.is_empty() {
       return Some(self);
@@ -55,11 +55,11 @@ impl<'a> Pirs<'a> {
 
     self.state.history.push(input_.into());
 
-    let code = match self.get_command(input[0]) {
+    let code = match self.get_command(&input[0]) {
       Some(command) => {
         self.logger.debug(&format!("executing: {}...", input[0]));
 
-        let out = (command.handler)(self, input.iter().skip(1).copied().collect()).await;
+        let out = (command.handler)(self, input.into_iter().skip(1).collect()).await;
 
         if let Some(self_) = out.0 {
           self = self_;
@@ -90,22 +90,11 @@ impl<'a> Pirs<'a> {
   }
 }
 
-#[cfg(feature = "exit-on-drop")]
-impl Drop for Pirs<'_> {
-  fn drop(&mut self) {
-    if self.exit_handler.is_some() {
-      (self.exit_handler.take().unwrap())(0);
-    } else {
-      unreachable!();
-    }
-  }
-}
-
 #[derive(Clone)]
 pub struct Command {
   name: &'static str,
   #[allow(clippy::type_complexity)]
-  handler: for<'a> fn(Pirs<'a>, Vec<&str>) -> Future<'a, (Option<Pirs<'a>>, i32)>,
+  handler: for<'a> fn(Pirs<'a>, Vec<String>) -> Future<'a, (Option<Pirs<'a>>, i32)>,
 }
 
 pub trait Logger {

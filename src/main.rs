@@ -9,7 +9,7 @@ async fn main() {
   rl.borrow_mut().load_history(&*rl_history_file).ok();
 
   let mut pirs = pirs::Pirs::new(
-    |code| {
+    |code, _ctx| {
       rl.borrow_mut().save_history(&rl_history_file).unwrap();
 
       std::process::exit(code);

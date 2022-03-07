@@ -6,8 +6,8 @@ pub(crate) mod re_exports {
   #[cfg(feature = "std")]
   pub use std as alloc;
 
-  pub use super::alloc::{boxed::Box, format, pin::Pin, sync::Arc, vec::Vec};
-  pub use core::future::Future;
+  pub use alloc::{boxed::Box, collections::BTreeMap, format, string::String, sync::Arc, vec::Vec};
+  pub use core::{future::Future, pin::Pin};
 }
 
 use core::future::Future as Future_;
@@ -25,14 +25,16 @@ pub const DESCRIPTION: &str = env!("CARGO_PKG_DESCRIPTION");
 #[derive(Clone)]
 pub struct SeaShell<'a> {
   pub state: State,
-  exit_handler: Arc<Box<dyn Fn(i32, &mut Self) + 'a>>,
+  pub exit_handler: Arc<Box<dyn Fn(i32, &mut Self) + 'a>>,
   pub logger: Arc<Box<dyn Logger + 'a>>,
 }
 
 impl<'a> SeaShell<'a> {
-  pub fn new(exit_handler: impl Fn(i32, &mut Self) + 'a, logger: impl Logger + 'a) -> Self {
-    let supports_unicode = supports_unicode::on(supports_unicode::Stream::Stdout);
-
+  pub fn new(
+    exit_handler: impl Fn(i32, &mut Self) + 'a,
+    logger: impl Logger + 'a,
+    unicode_supported: bool,
+  ) -> Self {
     logger.info(&format!("Welcome to pirs version: {}", VERSION));
     logger.info(DESCRIPTION);
     logger.info("Type 'help' for a list of commands");
@@ -40,7 +42,7 @@ impl<'a> SeaShell<'a> {
 
     Self {
       exit_handler: Arc::new(Box::new(exit_handler)),
-      state: State::new(commands::BUILT_IN_COMMANDS, supports_unicode),
+      state: State::new(commands::BUILT_IN_COMMANDS, unicode_supported),
       logger: Arc::new(Box::new(logger)),
     }
   }

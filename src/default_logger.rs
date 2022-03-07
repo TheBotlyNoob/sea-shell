@@ -27,7 +27,7 @@ pub struct DefaultLogger<T: Clone + Into<web_sys::Element>> {
 
 #[cfg(not(target_arch = "wasm32"))]
 impl DefaultLogger {
-  pub fn new(log_level: LogLevel) -> Self {
+  pub fn new(log_level: LogLevel, unicode_supported: bool) -> Self {
     Self {
       log_level: if let Ok(level) = std::env::var("LOG_LEVEL") {
         match &*level.to_lowercase() {
@@ -40,7 +40,7 @@ impl DefaultLogger {
       } else {
         log_level as u8
       },
-      unicode_supported: supports_unicode::on(supports_unicode::Stream::Stdout),
+      unicode_supported,
     }
   }
 }

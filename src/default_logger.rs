@@ -40,7 +40,7 @@ impl DefaultLogger {
       } else {
         log_level as u8
       },
-      unicode_supported: crate::supports_unicode::on(crate::supports_unicode::Stream::Stdout),
+      unicode_supported: supports_unicode::on(supports_unicode::Stream::Stdout),
     }
   }
 }

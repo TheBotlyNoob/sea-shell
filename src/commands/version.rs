@@ -1,3 +1,5 @@
+use crate::re_exports::*;
+
 pub const VERSION_COMMAND: crate::Command = crate::Command {
   name: "version",
   handler: |ctx, _args| {

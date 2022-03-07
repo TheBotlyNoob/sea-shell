@@ -1,4 +1,17 @@
-use std::{future::Future as Future_, pin::Pin, sync::Arc};
+#![cfg_attr(not(feature = "std"), no_std)]
+
+pub(crate) mod re_exports {
+  #[cfg(not(feature = "std"))]
+  pub extern crate alloc;
+  #[cfg(feature = "std")]
+  pub use std as alloc;
+
+  pub use super::alloc::{boxed::Box, format, pin::Pin, sync::Arc, vec::Vec};
+  pub use core::future::Future;
+}
+
+use core::future::Future as Future_;
+use re_exports::*;
 
 mod state;
 
@@ -6,28 +19,17 @@ pub use state::State;
 
 pub mod commands;
 
-pub use supports_unicode__used_for_pirs as supports_unicode;
-
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const DESCRIPTION: &str = env!("CARGO_PKG_DESCRIPTION");
 
-pub struct Pirs<'a> {
+#[derive(Clone)]
+pub struct SeaShell<'a> {
   pub state: State,
   exit_handler: Arc<Box<dyn Fn(i32, &mut Self) + 'a>>,
-  pub logger: Box<dyn Logger + 'a>,
+  pub logger: Arc<Box<dyn Logger + 'a>>,
 }
 
-impl<'a> Clone for Pirs<'a> {
-  fn clone(&self) -> Self {
-    Self {
-      state: self.state.clone(),
-      exit_handler: self.exit_handler.clone(),
-      logger: dyn_clone::clone_box(&*self.logger),
-    }
-  }
-}
-
-impl<'a> Pirs<'a> {
+impl<'a> SeaShell<'a> {
   pub fn new(exit_handler: impl Fn(i32, &mut Self) + 'a, logger: impl Logger + 'a) -> Self {
     let supports_unicode = supports_unicode::on(supports_unicode::Stream::Stdout);
 
@@ -39,7 +41,7 @@ impl<'a> Pirs<'a> {
     Self {
       exit_handler: Arc::new(Box::new(exit_handler)),
       state: State::new(commands::BUILT_IN_COMMANDS, supports_unicode),
-      logger: Box::new(logger),
+      logger: Arc::new(Box::new(logger)),
     }
   }
 
@@ -102,10 +104,10 @@ impl<'a> Pirs<'a> {
 pub struct Command {
   name: &'static str,
   #[allow(clippy::type_complexity)]
-  handler: for<'a> fn(Pirs<'a>, Vec<String>) -> Future<'a, (Option<Pirs<'a>>, i32)>,
+  handler: for<'a> fn(SeaShell<'a>, Vec<String>) -> Future<'a, (Option<SeaShell<'a>>, i32)>,
 }
 
-pub trait Logger: dyn_clone::DynClone {
+pub trait Logger {
   fn debug(&self, message: &str);
 
   fn info(&self, message: &str);

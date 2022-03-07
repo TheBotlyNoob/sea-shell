@@ -1,8 +1,8 @@
 [package]
-name = "pirs"
+name = "sea-shell"
 description = "A portable Bash-like shell written in Rust"
 version = "0.0.10"
-repository = "https://github.com/pirs-rs/pirs"
+repository = "https://github.com/Sea-Shell-rs/Sea-Shell"
 homepage = "https://pirs.ml"
 license = "MIT"
 edition = "2021"

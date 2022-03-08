@@ -2,18 +2,16 @@ use crate::re_exports::*;
 
 pub const EXIT_COMMAND: crate::Command = crate::Command {
   name: "exit",
-  handler: |mut ctx, args| {
+  handler: |ctx, args| {
     Box::pin(async move {
       let code = args.get(0).map_or_else(
         || 0,
         |raw_exit_code| raw_exit_code.parse::<i32>().unwrap_or(0),
       );
 
-      let exit_handler = ctx.exit_handler.clone();
+      let out = (ctx.exit_handler)(code, ctx.clone());
 
-      exit_handler(code, &mut ctx);
-
-      (None, code)
+      (out, code)
     })
   },
 };

@@ -6,7 +6,14 @@ pub(crate) mod re_exports {
   #[cfg(feature = "std")]
   pub use std as alloc;
 
-  pub use alloc::{boxed::Box, collections::BTreeMap, format, string::String, sync::Arc, vec::Vec};
+  pub use alloc::{
+    boxed::Box,
+    collections::BTreeMap,
+    format,
+    string::{String, ToString},
+    sync::Arc,
+    vec::Vec,
+  };
   pub use core::{future::Future, pin::Pin};
 }
 
@@ -25,13 +32,14 @@ pub const DESCRIPTION: &str = env!("CARGO_PKG_DESCRIPTION");
 #[derive(Clone)]
 pub struct SeaShell<'a> {
   pub state: State,
-  pub exit_handler: Arc<Box<dyn Fn(i32, &mut Self) + 'a>>,
+  #[allow(clippy::type_complexity)]
+  pub exit_handler: Arc<Box<dyn Fn(i32, Self) -> Option<Self> + 'a>>,
   pub logger: Arc<Box<dyn Logger + 'a>>,
 }
 
 impl<'a> SeaShell<'a> {
   pub fn new(
-    exit_handler: impl Fn(i32, &mut Self) + 'a,
+    exit_handler: impl Fn(i32, Self) -> Option<Self> + 'a,
     logger: impl Logger + 'a,
     unicode_supported: bool,
   ) -> Self {
@@ -123,3 +131,7 @@ pub(crate) type Future<'a, T> = Pin<Box<dyn Future_<Output = T> + 'a>>;
 
 #[cfg(feature = "default-logger")]
 pub mod default_logger;
+
+macro_rules! log {
+  ( $x:ident ) => {};
+}

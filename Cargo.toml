@@ -28,9 +28,4 @@ strip = "symbols"
 
 [features]
 std = []
-
-[target.'cfg(target_arch = "wasm32")'.features]
-default-logger = ["wasm-bindgen", "web-sys"]
-
-[target.'cfg(not(target_arch = "wasm32"))'.features]
-default-logger = ["owo-colors", "std"]
+default-logger = ["wasm-bindgen", "web-sys", "owo-colors", "std"]

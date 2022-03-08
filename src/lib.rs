@@ -25,6 +25,9 @@ mod state;
 pub use state::State;
 
 pub mod commands;
+pub mod logger;
+
+pub(crate) mod macro_helpers;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const DESCRIPTION: &str = env!("CARGO_PKG_DESCRIPTION");
@@ -34,24 +37,26 @@ pub struct SeaShell<'a> {
   pub state: State,
   #[allow(clippy::type_complexity)]
   pub exit_handler: Arc<Box<dyn Fn(i32, Self) -> Option<Self> + 'a>>,
-  pub logger: Arc<Box<dyn Logger + 'a>>,
+  pub logger: Arc<Box<dyn logger::Logger + 'a>>,
 }
 
 impl<'a> SeaShell<'a> {
   pub fn new(
     exit_handler: impl Fn(i32, Self) -> Option<Self> + 'a,
-    logger: impl Logger + 'a,
+    logger_: impl logger::Logger + 'a,
     unicode_supported: bool,
   ) -> Self {
-    logger.info(&format!("Welcome to pirs version: {}", VERSION));
-    logger.info(DESCRIPTION);
-    logger.info("Type 'help' for a list of commands");
-    logger.raw("\n");
+    logger::create_logger_from_logger!(logger_, true);
+
+    log!(info, "Welcome to pirs version: {}", VERSION);
+    log!(info, "{}", DESCRIPTION);
+    log!(info, "Type 'help' for a list of commands");
+    log!();
 
     Self {
       exit_handler: Arc::new(Box::new(exit_handler)),
       state: State::new(commands::BUILT_IN_COMMANDS, unicode_supported),
-      logger: Arc::new(Box::new(logger)),
+      logger: Arc::new(Box::new(logger_)),
     }
   }
 
@@ -77,9 +82,10 @@ impl<'a> SeaShell<'a> {
 
     self.state.history.push(input_.into());
 
+    logger::create_logger_from_logger!(self.logger, true);
     let code = match self.get_command(&input[0]) {
       Some(command) => {
-        self.logger.debug(&format!("executing: {}...", input[0]));
+        log!(debug, "executing: {}...", input[0]);
 
         let out = (command.handler)(self.clone(), input.into_iter().skip(1).collect()).await;
 
@@ -90,15 +96,15 @@ impl<'a> SeaShell<'a> {
         out.1
       }
       None => {
-        self
-          .logger
-          .error(&format!("command not found: {}", input[0]));
+        log!(error, "command not found: {}", input[0]);
 
         1
       }
     };
 
-    self.state.set_environment_variable("", code.to_string());
+    self
+      .state
+      .set_environment_variable("exit", code.to_string());
   }
 
   pub fn get_command(&self, command: impl AsRef<str>) -> Option<&Command> {
@@ -115,23 +121,4 @@ pub struct Command {
   handler: for<'a> fn(SeaShell<'a>, Vec<String>) -> Future<'a, (Option<SeaShell<'a>>, i32)>,
 }
 
-pub trait Logger {
-  fn debug(&self, message: &str);
-
-  fn info(&self, message: &str);
-
-  fn warn(&self, message: &str);
-
-  fn error(&self, message: &str);
-
-  fn raw(&self, message: &str);
-}
-
 pub(crate) type Future<'a, T> = Pin<Box<dyn Future_<Output = T> + 'a>>;
-
-#[cfg(feature = "default-logger")]
-pub mod default_logger;
-
-macro_rules! log {
-  ( $x:ident ) => {};
-}

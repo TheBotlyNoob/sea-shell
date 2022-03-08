@@ -1,16 +1,6 @@
 #[cfg(not(target_arch = "wasm32"))]
 use owo_colors::OwoColorize;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(u8)]
-pub enum LogLevel {
-  Debug = 4,
-  Info = 3,
-  Warn = 2,
-  Error = 1,
-  None = 0,
-}
-
 #[derive(Debug, Clone)]
 #[cfg(not(target_arch = "wasm32"))]
 pub struct DefaultLogger {
@@ -27,7 +17,7 @@ pub struct DefaultLogger<T: Clone + Into<web_sys::Element>> {
 
 #[cfg(not(target_arch = "wasm32"))]
 impl DefaultLogger {
-  pub fn new(log_level: LogLevel, unicode_supported: bool) -> Self {
+  pub fn new(log_level: super::LogLevel, unicode_supported: bool) -> Self {
     Self {
       log_level: if let Ok(level) = std::env::var("LOG_LEVEL") {
         match &*level.to_lowercase() {
@@ -47,9 +37,9 @@ impl DefaultLogger {
 
 #[cfg(not(target_arch = "wasm32"))]
 impl super::Logger for DefaultLogger {
-  fn debug(&self, message: &str) {
+  fn debug(&self, message: String) {
     if self.log_level >= 4 {
-      println!(
+      print!(
         "[{}]: {}",
         if self.unicode_supported {
           "debug".green().to_string()
@@ -61,9 +51,9 @@ impl super::Logger for DefaultLogger {
     }
   }
 
-  fn info(&self, message: &str) {
+  fn info(&self, message: String) {
     if self.log_level >= 3 {
-      println!(
+      print!(
         "[{}]: {}",
         if self.unicode_supported {
           "info".green().to_string()
@@ -75,9 +65,9 @@ impl super::Logger for DefaultLogger {
     }
   }
 
-  fn warn(&self, message: &str) {
+  fn warn(&self, message: String) {
     if self.log_level >= 2 {
-      println!(
+      print!(
         "[{}]: {}",
         if self.unicode_supported {
           "warn".yellow().to_string()
@@ -89,9 +79,9 @@ impl super::Logger for DefaultLogger {
     }
   }
 
-  fn error(&self, message: &str) {
+  fn error(&self, message: String) {
     if self.log_level >= 1 {
-      println!(
+      print!(
         "[{}]: {}",
         if self.unicode_supported {
           "error".bright_red().to_string()
@@ -103,9 +93,9 @@ impl super::Logger for DefaultLogger {
     }
   }
 
-  fn raw(&self, message: &str) {
+  fn raw(&self, message: String) {
     if self.log_level > 0 {
-      println!("{}", message)
+      print!("{}", message)
     }
   }
 }
@@ -113,7 +103,7 @@ impl super::Logger for DefaultLogger {
 // do the same as above, but using a DOM element instead of stdout
 #[cfg(target_arch = "wasm32")]
 impl<T: Clone + Into<web_sys::Element>> DefaultLogger<T> {
-  pub fn new(log_level: LogLevel, element: T) -> Self {
+  pub fn new(log_level: super::LogLevel, element: T) -> Self {
     Self {
       log_level: log_level as u8,
       element,
@@ -123,17 +113,13 @@ impl<T: Clone + Into<web_sys::Element>> DefaultLogger<T> {
   fn log(&self, s: String) {
     let element = self.element.clone().into();
 
-    element.set_inner_html(&format!(
-      "{}{}<br>",
-      element.inner_html(),
-      s.replace('\n', "<br>")
-    ));
+    element.set_inner_html(&(element.inner_html() + s.replace('\n', "<br>")));
   }
 }
 
 #[cfg(target_arch = "wasm32")]
 impl<T: Clone + Into<web_sys::Element>> crate::Logger for DefaultLogger<T> {
-  fn debug(&self, message: &str) {
+  fn debug(&self, message: String) {
     if self.log_level >= 4 {
       self.log(format!(
         "[<span style=\"color:#00BFFF\">debug</span>]: {}",
@@ -142,7 +128,7 @@ impl<T: Clone + Into<web_sys::Element>> crate::Logger for DefaultLogger<T> {
     }
   }
 
-  fn info(&self, message: &str) {
+  fn info(&self, message: String) {
     if self.log_level >= 3 {
       self.log(format!(
         "[<span style=\"color:#00FF00\">info</span>]: {}",
@@ -151,7 +137,7 @@ impl<T: Clone + Into<web_sys::Element>> crate::Logger for DefaultLogger<T> {
     }
   }
 
-  fn warn(&self, message: &str) {
+  fn warn(&self, message: String) {
     if self.log_level >= 2 {
       self.log(format!(
         "[<span style=\"color:#FFFF00\">warn</span>]: {}",
@@ -160,7 +146,7 @@ impl<T: Clone + Into<web_sys::Element>> crate::Logger for DefaultLogger<T> {
     }
   }
 
-  fn error(&self, message: &str) {
+  fn error(&self, message: String) {
     if self.log_level >= 1 {
       self.log(format!(
         "[<span style=\"color:#FF0000\">error</span>]: {}",
@@ -169,7 +155,7 @@ impl<T: Clone + Into<web_sys::Element>> crate::Logger for DefaultLogger<T> {
     }
   }
 
-  fn raw(&self, message: &str) {
+  fn raw(&self, message: String) {
     self.log(message.replace('<', "&lt;"));
   }
 }

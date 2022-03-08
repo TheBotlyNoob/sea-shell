@@ -48,7 +48,11 @@ impl<'a> SeaShell<'a> {
   }
 
   pub async fn handle_command(&mut self, input: impl AsRef<str>) {
-    let input_ = input.as_ref();
+    let input_ = input.as_ref().trim();
+
+    if input_.is_empty() {
+      return;
+    }
 
     let input = input_
       .split_whitespace()
@@ -63,10 +67,6 @@ impl<'a> SeaShell<'a> {
       })
       .collect::<Vec<String>>();
 
-    if input.is_empty() {
-      return;
-    }
-
     self.state.history.push(input_.into());
 
     let code = match self.get_command(&input[0]) {
@@ -77,8 +77,6 @@ impl<'a> SeaShell<'a> {
 
         if let Some(self_) = out.0 {
           *self = self_;
-        } else {
-          return;
         }
 
         out.1
@@ -92,7 +90,7 @@ impl<'a> SeaShell<'a> {
       }
     };
 
-    self.state.set_last_exit_code(code);
+    self.state.set_environment_variable("", code.to_string());
   }
 
   pub fn get_command(&self, command: impl AsRef<str>) -> Option<&Command> {

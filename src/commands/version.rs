@@ -5,7 +5,7 @@ pub const VERSION_COMMAND: crate::Command = crate::Command {
   description: "Display the version",
   args: &[],
   handler: |ctx, _args| {
-    crate::logger::create_logger_from_logger!(ctx.logger, true);
+    create_logger_from_logger!(ctx.logger, true);
 
     Box::pin(async move {
       log!(raw, crate::VERSION);

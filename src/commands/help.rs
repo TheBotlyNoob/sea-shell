@@ -6,7 +6,7 @@ pub const HELP_COMMAND: crate::Command = crate::Command {
   args: &[],
   handler: |ctx, _args| {
     Box::pin(async move {
-      crate::logger::create_logger_from_logger!(ctx.logger, true);
+      create_logger_from_logger!(ctx.logger, true);
 
       log!(raw, "Sea Shell version {}\n", crate::VERSION);
 

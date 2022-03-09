@@ -3,9 +3,12 @@ use crate::re_exports::*;
 pub const EXIT_COMMAND: crate::Command = crate::Command {
   name: "exit",
   description: "Exit Sea Shell",
-  args: &[],
+  args: &[Arg {
+    name: "code",
+    ..Arg::default()
+  }],
   handler: |ctx, args| {
-    crate::logger::create_logger_from_logger!(ctx.logger, true);
+    create_logger_from_logger!(ctx.logger, true);
 
     Box::pin(async move {
       let code = args.get(0).map_or_else(

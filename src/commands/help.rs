@@ -11,7 +11,7 @@ pub const HELP_COMMAND: crate::Command = crate::Command {
       log!(raw, "Sea Shell version {}\n", crate::VERSION);
 
       for command in &ctx.state.commands {
-        log!(raw, "{}: {}", command.name, command.description);
+        log!(raw, command);
       }
 
       (Some(ctx), 0)

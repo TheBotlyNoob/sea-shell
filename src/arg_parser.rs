@@ -35,6 +35,16 @@ impl Display for Arg<'_> {
 
     out.push_str(self.name);
 
+    if self.flag_type != FlagType::Boolean {
+      out.push_str("=");
+
+      if self.flag_type == FlagType::Number {
+        out.push_str("<number>");
+      } else {
+        out.push_str("<string>");
+      }
+    }
+
     if self.is_required {
       out = format!("[{}]", out);
     } else {

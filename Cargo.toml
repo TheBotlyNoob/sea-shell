@@ -1,7 +1,7 @@
 [package]
 name = "sea-shell"
 description = "A portable Bash-like shell written in Rust"
-version = "0.0.11"
+version = "0.0.12"
 repository = "https://github.com/Sea-Shell-rs/Sea-Shell"
 homepage = "https://sea-shell.jj.is-a.dev/"
 license = "MIT"
@@ -10,6 +10,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+itertools = "0.10"
 
 # For the CLI
 reedline = { version = "0.2", optional = true }

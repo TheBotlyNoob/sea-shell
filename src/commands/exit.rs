@@ -5,8 +5,6 @@ pub const EXIT_COMMAND: crate::Command = crate::Command {
   description: "Exit Sea Shell",
   args: &[Arg {
     name: "code",
-    is_flag: true,
-    is_required: true,
     ..Arg::default()
   }],
   handler: |ctx, args| {

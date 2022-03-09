@@ -30,16 +30,19 @@ macro_rules! create_logger_from_logger {
         #[allow(unused_macros)]
         macro_rules! log {
           ( $level:ident, $arg:expr ) => {
-            $logger.$level($arg.into());
+            $logger.$level(match $newlines {
+              true => format!("{}\n", $arg),
+              false => $arg.to_string(),
+            });
           };
           ( $level:ident, $escape($arg:tt)* ) => {
             $logger.$level(match $newlines {
               true => format!("{}\n", format!($escape($arg)*)),
-              false => format!($escape($arg)*)
+              false => format!($escape($arg)*),
             });
           };
           () => {
-            $logger.raw("".into());
+            $logger.raw('\n'.into());
           };
         }
       }

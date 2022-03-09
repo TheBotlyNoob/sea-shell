@@ -21,6 +21,7 @@ pub(crate) mod re_exports {
     future::Future,
     pin::Pin,
   };
+  pub use itertools::Itertools;
 }
 
 use core::future::Future as Future_;
@@ -93,8 +94,6 @@ impl<'a> SeaShell<'a> {
     create_logger_from_logger!(self.logger, true);
     let code = match self.get_command(&command) {
       Some(command_) => {
-        log!(raw, "{}", command_);
-
         log!(debug, "executing: {}...", command);
 
         let out = (command_.handler)(self.clone(), args).await;
@@ -133,8 +132,8 @@ pub struct Command {
   pub handler: for<'a> fn(SeaShell<'a>, Vec<String>) -> Future<'a, (Option<SeaShell<'a>>, i32)>,
 }
 
-impl Command {
-  pub fn generate_help_text(&self) -> String {
+impl Display for Command {
+  fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
     let mut help_text = String::new();
 
     help_text.push_str(self.name);
@@ -150,13 +149,7 @@ impl Command {
     help_text.push_str(": ");
     help_text.push_str(self.description);
 
-    help_text
-  }
-}
-
-impl Display for Command {
-  fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-    write!(f, "{}", self.generate_help_text())
+    write!(f, "{}", help_text)
   }
 }
 

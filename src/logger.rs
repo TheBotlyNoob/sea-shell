@@ -1,3 +1,5 @@
+use crate::re_exports::String;
+
 pub trait Logger {
   fn debug(&self, message: String);
 

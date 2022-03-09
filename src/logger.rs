@@ -27,6 +27,9 @@ macro_rules! create_logger_from_logger {
       ( $escape:tt ) => {
         #[allow(unused_macros)]
         macro_rules! log {
+          ( $level:ident, $arg:expr ) => {
+            $logger.$level($arg.into());
+          };
           ( $level:ident, $escape($arg:tt)* ) => {
             $logger.$level(match $newlines {
               true => format!("{}\n", format!($escape($arg)*)),

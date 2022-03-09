@@ -24,6 +24,7 @@ mod state;
 
 pub use state::State;
 
+pub mod arg_parser;
 pub mod commands;
 pub mod logger;
 
@@ -48,8 +49,8 @@ impl<'a> SeaShell<'a> {
   ) -> Self {
     logger::create_logger_from_logger!(logger_, true);
 
-    log!(info, "Welcome to pirs version: {}", VERSION);
-    log!(info, "{}", DESCRIPTION);
+    log!(info, "Welcome to Sea Shell version: {}", VERSION);
+    log!(info, DESCRIPTION);
     log!(info, "Type 'help' for a list of commands");
     log!();
 
@@ -116,9 +117,11 @@ impl<'a> SeaShell<'a> {
 
 #[derive(Clone)]
 pub struct Command {
-  name: &'static str,
+  pub name: &'static str,
+  pub description: &'static str,
+  pub args: &'static [arg_parser::Arg<'static>],
   #[allow(clippy::type_complexity)]
-  handler: for<'a> fn(SeaShell<'a>, Vec<String>) -> Future<'a, (Option<SeaShell<'a>>, i32)>,
+  pub handler: for<'a> fn(SeaShell<'a>, Vec<String>) -> Future<'a, (Option<SeaShell<'a>>, i32)>,
 }
 
 pub(crate) type Future<'a, T> = Pin<Box<dyn Future_<Output = T> + 'a>>;

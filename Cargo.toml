@@ -1,7 +1,7 @@
 [package]
 name = "sea-shell"
 description = "A portable Bash-like shell written in Rust"
-version = "0.0.10"
+version = "0.0.11"
 repository = "https://github.com/Sea-Shell-rs/Sea-Shell"
 homepage = "https://sea-shell.jj.is-a.dev/"
 license = "MIT"

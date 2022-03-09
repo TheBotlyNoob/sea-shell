@@ -144,7 +144,6 @@ impl Command {
 
       for arg in self.args {
         help_text.push_str(&format!("{}", arg));
-        help_text.push(' ');
       }
     }
 

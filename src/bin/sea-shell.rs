@@ -17,7 +17,7 @@ async fn main() {
 
     match sig {
       Signal::Success(input) => {
-        shell.handle_command(input).await;
+        shell.handle_command(&input).await;
       }
       Signal::CtrlD | Signal::CtrlC => {
         line_editor.print_crlf().unwrap();

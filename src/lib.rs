@@ -6,7 +6,7 @@ pub(crate) mod re_exports {
   #[cfg(feature = "std")]
   pub use std as alloc;
 
-  pub use crate::arg_parser::Arg;
+  pub use crate::arg_parser::{Arg, ArgType};
   pub use crate::logger::create_logger_from_logger;
   pub use alloc::{
     boxed::Box,
@@ -19,6 +19,7 @@ pub(crate) mod re_exports {
   pub use core::{
     fmt::{self, Display, Formatter, Result as FmtResult},
     future::Future,
+    mem,
     pin::Pin,
   };
   pub use itertools::Itertools;
@@ -70,24 +71,19 @@ impl<'a> SeaShell<'a> {
 
   pub async fn handle_command(&mut self, input: impl AsRef<str>) {
     let input = input.as_ref().trim();
+    let mut input_ = input.split_whitespace();
 
-    if input.is_empty() {
+    let command = input_.next();
+
+    if command.is_none() {
       return;
     }
 
-    let mut input_ = input.split_whitespace().filter_map(|input| {
-      let trimmed = input.trim();
+    let command = unsafe { command.unwrap_unchecked() };
 
-      if trimmed.is_empty() {
-        None
-      } else {
-        Some(trimmed.into())
-      }
-    });
+    let input_ = input_.map(|input| input.to_string().into());
 
-    let command = input_.next().unwrap();
-
-    let args = input_.collect::<Vec<_>>();
+    let args = input_.collect::<Vec<Arg>>();
 
     self.state.history.push(input.into());
 
@@ -129,7 +125,8 @@ pub struct Command {
   pub description: &'static str,
   pub args: &'static [Arg<'static>],
   #[allow(clippy::type_complexity)]
-  pub handler: for<'a> fn(SeaShell<'a>, Vec<String>) -> Future<'a, (Option<SeaShell<'a>>, i32)>,
+  pub handler:
+    for<'a> fn(SeaShell<'a>, Vec<Arg<'static>>) -> Future<'a, (Option<SeaShell<'a>>, i32)>,
 }
 
 impl Display for Command {

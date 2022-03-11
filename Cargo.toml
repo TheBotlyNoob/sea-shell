@@ -11,6 +11,7 @@ edition = "2021"
 
 [dependencies]
 itertools = "0.10"
+argwerk-no-std = "0.20"
 
 # For the CLI
 reedline = { version = "0.2", optional = true }

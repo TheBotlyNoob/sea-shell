@@ -6,7 +6,6 @@ pub(crate) mod re_exports {
   #[cfg(feature = "std")]
   pub use std as alloc;
 
-  pub use crate::arg_parser::{Arg, ArgType};
   pub use crate::logger::create_logger_from_logger;
   pub use alloc::{
     boxed::Box,
@@ -32,7 +31,6 @@ mod state;
 
 pub use state::State;
 
-pub mod arg_parser;
 pub mod commands;
 pub mod logger;
 
@@ -70,46 +68,46 @@ impl<'a> SeaShell<'a> {
   }
 
   pub async fn handle_command(&mut self, input: impl AsRef<str>) {
-    let input = input.as_ref().trim();
-    let mut input_ = input.split_whitespace();
+    let raw_input = input.as_ref().trim();
+    let mut input = raw_input.split_whitespace();
 
-    let command = input_.next();
+    let command = input.next();
 
     if command.is_none() {
       return;
     }
 
-    let command = unsafe { command.unwrap_unchecked() };
+    let raw_command = unsafe { command.unwrap_unchecked() };
 
-    let input_ = input_.map(|input| input.to_string().into());
-
-    let args = input_.collect::<Vec<Arg>>();
-
-    self.state.history.push(input.into());
+    let command = self.get_command(raw_command);
 
     create_logger_from_logger!(self.logger, true);
-    let code = match self.get_command(&command) {
-      Some(command_) => {
-        log!(debug, "executing: {}...", command);
 
-        let out = (command_.handler)(self.clone(), args).await;
+    if command.is_none() {
+      log!(error, "command not found: {}", raw_command);
 
-        if let Some(self_) = out.0 {
-          *self = self_;
-        }
+      self.state.set_environment_variable("exit", "1".to_owned());
 
-        out.1
-      }
-      None => {
-        log!(error, "command not found: {}", command);
+      return;
+    }
 
-        1
-      }
-    };
+    let command = unsafe { command.unwrap_unchecked() };
+
+    let args = (command.parse_args)(input.collect());
+
+    self.state.history.push(raw_input.into());
+
+    log!(debug, "executing: {}...", command);
+
+    let out = (command.handler)(self.clone(), args).await;
+
+    if let Some(self_) = out.0 {
+      *self = self_;
+    }
 
     self
       .state
-      .set_environment_variable("exit", code.to_string());
+      .set_environment_variable("exit", out.1.to_string());
   }
 
   pub fn get_command(&self, command: impl AsRef<str>) -> Option<&Command> {
@@ -123,30 +121,32 @@ impl<'a> SeaShell<'a> {
 pub struct Command {
   pub name: &'static str,
   pub description: &'static str,
-  pub args: &'static [Arg<'static>],
+  pub parse_args: fn(Vec<&str>) -> Box<dyn argwerk_no_std::TryIntoInput>,
   #[allow(clippy::type_complexity)]
-  pub handler:
-    for<'a> fn(SeaShell<'a>, Vec<Arg<'static>>) -> Future<'a, (Option<SeaShell<'a>>, i32)>,
+  pub handler: for<'a> fn(
+    SeaShell<'a>,
+    Box<dyn argwerk_no_std::TryIntoInput>,
+  ) -> Future<'a, (Option<SeaShell<'a>>, i32)>,
 }
 
 impl Display for Command {
   fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-    let mut help_text = String::new();
+    // let mut help_text = String::new();
 
-    help_text.push_str(self.name);
+    // help_text.push_str(self.name);
 
-    if !self.args.is_empty() {
-      help_text.push(' ');
+    // if !self.args.is_empty() {
+    //   help_text.push(' ');
 
-      for arg in self.args {
-        help_text.push_str(&format!("{}", arg));
-      }
-    }
+    //   for arg in self.args {
+    //     help_text.push_str(&format!("{}", arg));
+    //   }
+    // }
 
-    help_text.push_str(": ");
-    help_text.push_str(self.description);
+    // help_text.push_str(": ");
+    // help_text.push_str(self.description);
 
-    write!(f, "{}", help_text)
+    write!(f, "{{}}",)
   }
 }
 

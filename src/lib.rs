@@ -91,7 +91,7 @@ impl<'a> SeaShell<'a> {
       return;
     }
 
-    let command = unsafe { command.unwrap_unchecked() };
+    let command = command.unwrap();
 
     let args = (command.parse_args)(input.collect());
 
@@ -110,10 +110,10 @@ impl<'a> SeaShell<'a> {
       .set_environment_variable("exit", out.1.to_string());
   }
 
-  pub fn get_command(&self, command: impl AsRef<str>) -> Option<&Command> {
+  pub fn get_command(&self, command: impl AsRef<str>) -> Option<&mut Command> {
     let command = command.as_ref();
 
-    self.state.commands.iter().find(|c| c.name == command)
+    self.state.commands.iter_mut().find(|c| c.name == command)
   }
 }
 

@@ -6,16 +6,17 @@ pub(crate) mod re_exports {
   #[cfg(feature = "std")]
   pub use std as alloc;
 
-  pub use crate::logger::create_logger_from_logger;
+  pub use crate::logger::create_log_from_logger;
   pub use alloc::{
     boxed::Box,
     collections::BTreeMap,
     format,
     string::{String, ToString},
-    sync::Arc,
+    sync::{Arc, RwLock},
     vec::Vec,
   };
   pub use core::{
+    any::Any,
     fmt::{self, Display, Formatter, Result as FmtResult},
     future::Future,
     mem,
@@ -41,10 +42,14 @@ pub const DESCRIPTION: &str = env!("CARGO_PKG_DESCRIPTION");
 
 #[derive(Clone)]
 pub struct SeaShell<'a> {
-  pub state: State,
+  pub state: Arc<RwLock<State>>,
   #[allow(clippy::type_complexity)]
   pub exit_handler: Arc<Box<dyn Fn(i32, Self) -> Option<Self> + 'a>>,
   pub logger: Arc<Box<dyn logger::Logger + 'a>>,
+}
+
+pub enum HandleError {
+  CommandNotFound,
 }
 
 impl<'a> SeaShell<'a> {
@@ -53,7 +58,7 @@ impl<'a> SeaShell<'a> {
     logger_: impl logger::Logger + 'a,
     unicode_supported: bool,
   ) -> Self {
-    create_logger_from_logger!(logger_, true);
+    create_log_from_logger!(logger_, true);
 
     log!(info, "Welcome to Sea Shell version: {}", VERSION);
     log!(info, DESCRIPTION);
@@ -62,40 +67,34 @@ impl<'a> SeaShell<'a> {
 
     Self {
       exit_handler: Arc::new(Box::new(exit_handler)),
-      state: State::new(commands::BUILT_IN_COMMANDS, unicode_supported),
+      state: Arc::new(RwLock::new(State::new(
+        commands::BUILT_IN_COMMANDS,
+        unicode_supported,
+      ))),
       logger: Arc::new(Box::new(logger_)),
     }
   }
 
-  pub async fn handle_command(&mut self, input: impl AsRef<str>) {
+  pub async fn handle_command(&mut self, input: impl AsRef<str>) -> Result<(), HandleError> {
     let raw_input = input.as_ref().trim();
     let mut input = raw_input.split_whitespace();
 
-    let command = input.next();
+    let command = input.next().ok_or(HandleError::CommandNotFound)?;
 
-    if command.is_none() {
-      return;
-    }
+    let command = self.get_command(command);
 
-    let raw_command = unsafe { command.unwrap_unchecked() };
-
-    let command = self.get_command(raw_command);
-
-    create_logger_from_logger!(self.logger, true);
-
-    if command.is_none() {
-      log!(error, "command not found: {}", raw_command);
-
-      self.state.set_environment_variable("exit", "1".to_owned());
-
-      return;
-    }
+    create_log_from_logger!(self.logger, true);
 
     let command = command.unwrap();
 
     let args = (command.parse_args)(input.collect());
 
-    self.state.history.push(raw_input.into());
+    self
+      .state
+      .write()
+      .unwrap()
+      .history
+      .push(raw_input.to_owned());
 
     log!(debug, "executing: {}...", command);
 
@@ -107,13 +106,24 @@ impl<'a> SeaShell<'a> {
 
     self
       .state
+      .write()
+      .unwrap()
       .set_environment_variable("exit", out.1.to_string());
+
+    Ok(())
   }
 
-  pub fn get_command(&self, command: impl AsRef<str>) -> Option<&mut Command> {
+  pub fn get_command(&self, command: impl AsRef<str>) -> Option<Arc<Command>> {
     let command = command.as_ref();
 
-    self.state.commands.iter_mut().find(|c| c.name == command)
+    self
+      .state
+      .read()
+      .unwrap()
+      .commands
+      .iter()
+      .cloned()
+      .find(|c| c.name == command)
   }
 }
 
@@ -121,12 +131,9 @@ impl<'a> SeaShell<'a> {
 pub struct Command {
   pub name: &'static str,
   pub description: &'static str,
-  pub parse_args: fn(Vec<&str>) -> Box<dyn argwerk_no_std::TryIntoInput>,
+  pub parse_args: fn(Vec<&str>) -> Box<dyn Any>,
   #[allow(clippy::type_complexity)]
-  pub handler: for<'a> fn(
-    SeaShell<'a>,
-    Box<dyn argwerk_no_std::TryIntoInput>,
-  ) -> Future<'a, (Option<SeaShell<'a>>, i32)>,
+  pub handler: for<'a> fn(SeaShell<'a>, Box<dyn Any>) -> Future<'a, (Option<SeaShell<'a>>, i32)>,
 }
 
 impl Display for Command {

@@ -44,7 +44,7 @@ impl super::Logger for DefaultLogger {
         if self.unicode_supported {
           "debug".green().to_string()
         } else {
-          "debug".into()
+          "debug".to_owned()
         },
         message
       );
@@ -58,7 +58,7 @@ impl super::Logger for DefaultLogger {
         if self.unicode_supported {
           "info".green().to_string()
         } else {
-          "info".into()
+          "info".to_owned()
         },
         message
       );
@@ -72,7 +72,7 @@ impl super::Logger for DefaultLogger {
         if self.unicode_supported {
           "warn".yellow().to_string()
         } else {
-          "warn".into()
+          "warn".to_owned()
         },
         message
       );
@@ -86,7 +86,7 @@ impl super::Logger for DefaultLogger {
         if self.unicode_supported {
           "error".bright_red().to_string()
         } else {
-          "error".into()
+          "error".to_owned()
         },
         message
       );
@@ -111,7 +111,7 @@ impl<T: Clone + Into<web_sys::Element>> DefaultLogger<T> {
   }
 
   fn log(&self, s: String) {
-    let element = self.element.clone().into();
+    let element = self.element.clone().to_owned();
 
     element.set_inner_html(&(element.inner_html() + s.replace('\n', "<br>")));
   }

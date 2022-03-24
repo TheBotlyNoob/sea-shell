@@ -23,7 +23,7 @@ pub enum LogLevel {
 }
 
 #[macro_export]
-macro_rules! create_logger_from_logger {
+macro_rules! create_log_from_logger {
   ( $logger:expr, $newlines:expr ) => {
     crate::macro_helpers::with_dollar_sign! {
       ( $escape:tt ) => {
@@ -50,7 +50,7 @@ macro_rules! create_logger_from_logger {
   };
 }
 
-pub use create_logger_from_logger;
+pub use create_log_from_logger;
 
 #[cfg(feature = "default-logger")]
 pub mod default;

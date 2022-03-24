@@ -14,7 +14,7 @@ itertools = "0.10"
 argwerk-no-std = "0.20"
 
 # For the CLI
-reedline = { version = "0.2", optional = true }
+reedline = { version = "0.3", optional = true }
 tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]

@@ -6,7 +6,7 @@ pub struct State {
   pub prompt: String,
   pub unicode_supported: bool,
   pub history: Vec<String>,
-  pub commands: Vec<crate::Command>,
+  pub commands: Vec<Arc<crate::Command>>,
 }
 
 impl State {
@@ -14,8 +14,8 @@ impl State {
     Self {
       environment: BTreeMap::new(),
       unicode_supported,
-      prompt: if unicode_supported { "❯ " } else { "> " }.into(),
-      commands: commands.to_vec(),
+      prompt: if unicode_supported { "❯ " } else { "> " }.to_owned(),
+      commands: commands.iter().map(|command| Arc::new(*command)).collect(),
       history: Vec::new(),
     }
   }
@@ -23,7 +23,7 @@ impl State {
   pub fn set_environment_variable(&mut self, key: impl AsRef<str>, value: impl AsRef<str>) {
     self
       .environment
-      .insert(key.as_ref().into(), value.as_ref().into());
+      .insert(key.as_ref().to_owned(), value.as_ref().to_owned());
 
     #[cfg(feature = "std")]
     std::env::set_var(key.as_ref(), value.as_ref());

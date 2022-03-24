@@ -10,7 +10,7 @@ pub const EXIT_COMMAND: crate::Command = crate::Command {
   }
   .check()],
   handler: |ctx, args| {
-    create_logger_from_logger!(ctx.logger, true);
+    create_log_from_logger!(ctx.logger, true);
 
     Box::pin(async move {
       let code = args.get(0).map_or_else(

@@ -1,7 +1,7 @@
 [package]
 name = "sea-shell"
 description = "A portable Bash-like shell written in Rust"
-version = "0.0.12"
+version = "0.0.1"
 repository = "https://github.com/Sea-Shell-rs/Sea-Shell"
 homepage = "https://sea-shell.jj.is-a.dev/"
 license = "MIT"
@@ -10,29 +10,3 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-itertools = "0.10"
-argwerk-no-std = "0.20"
-
-# For the CLI
-reedline = { version = "0.3", optional = true }
-tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
-
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-wasm-bindgen = { version = "0.2", optional = true }
-web-sys = { version = "0.3", optional = true, features = ["Element"] }
-
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-owo-colors = { version = "3.2", optional = true }
-
-[profile.release]
-lto = true
-strip = "symbols"
-
-[[bin]]
-name = "sea-shell"
-required-features = ["cli"]
-
-[features]
-std = []
-default-logger = ["wasm-bindgen", "web-sys", "owo-colors", "std"]
-cli = ["default-logger", "std", "reedline"]

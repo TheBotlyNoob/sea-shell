@@ -1,4 +1,0 @@
-run = ["cargo", "run", "--features=cli"]
-
-[nix]
-channel = "stable-21_11"
